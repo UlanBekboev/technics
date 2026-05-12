@@ -94,13 +94,12 @@ export default function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
-          {/* Cart button — hidden by default, slides up on hover */}
           <button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
             className="mt-2 w-full flex items-center justify-center gap-1.5 text-white text-xs font-semibold py-2 rounded-lg transition-all duration-200
-                       opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0
-                       disabled:opacity-0 disabled:pointer-events-none"
+                       md:opacity-0 md:translate-y-2 md:group-hover:opacity-100 md:group-hover:translate-y-0
+                       disabled:opacity-40 disabled:pointer-events-none"
             style={{ background: 'linear-gradient(135deg, #003d8f, #0077e6)' }}
           >
             <ShoppingCart size={13} />

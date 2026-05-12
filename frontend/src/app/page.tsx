@@ -85,8 +85,10 @@ export default function HomePage() {
     <div className="bg-gray-50 min-h-screen">
       {/* Hero: sidebar + banner */}
       <section className="max-w-7xl mx-auto px-4 pt-4 pb-3">
-        <div className="flex gap-0 items-stretch min-h-[295px]">
-          <CatalogSidebar />
+        <div className="flex gap-0 items-stretch min-h-[220px] md:min-h-[295px]">
+          <div className="hidden md:block">
+            <CatalogSidebar />
+          </div>
 
           {/* Banner slider */}
           <div

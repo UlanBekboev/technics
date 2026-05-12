@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, User, Phone, MapPin } from 'lucide-react';
+import { Search, ShoppingCart, User, Phone, MapPin, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import { getProducts, getMe } from '@/lib/api';
@@ -33,6 +33,7 @@ export default function Header() {
   const [searching, setSearching] = useState(false);
   const [open, setOpen]           = useState(false);
   const [mounted, setMounted]     = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const wrapRef                   = useRef<HTMLFormElement>(null);
   const { count } = useCartStore();
   const { user, logout, setAuth, token } = useAuthStore();
@@ -86,7 +87,7 @@ export default function Header() {
     <header className="bg-white sticky top-0 z-50 shadow-md">
 
       {/* ── Top navigation bar ── */}
-      <div className="text-white text-xs" style={{ background: TOPBAR_BG }}>
+      <div className="hidden md:block text-white text-xs" style={{ background: TOPBAR_BG }}>
         <div className="max-w-7xl mx-auto px-4 h-9 flex items-center justify-between gap-4">
 
           {/* Nav links */}
@@ -239,6 +240,13 @@ export default function Header() {
       <div className="border-t border-gray-100 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center gap-2 overflow-x-auto py-2" style={{ scrollbarWidth: 'none' }}>
+            {/* Hamburger — mobile only */}
+            <button
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600"
+            >
+              {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+            </button>
             {QUICK_CATS.map((cat) => (
               <a
                 key={cat.href}
@@ -251,6 +259,33 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* ── Mobile menu ── */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 flex flex-col gap-1">
+          {NAV_LINKS.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2.5 px-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+            >
+              {item.label}
+            </Link>
+          ))}
+          <div className="border-t border-gray-100 pt-2 mt-1 flex flex-col gap-1">
+            <a href="tel:+996700916121" className="py-2.5 px-3 flex items-center gap-2 text-sm text-gray-600">
+              <Phone size={14} /> +996 700 916 121
+            </a>
+            <a href="tel:+996551916122" className="py-2.5 px-3 flex items-center gap-2 text-sm text-gray-600">
+              <Phone size={14} /> +996 551 916 122
+            </a>
+            <span className="py-2.5 px-3 flex items-center gap-2 text-sm text-gray-400">
+              <MapPin size={14} /> г. Бишкек
+            </span>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
