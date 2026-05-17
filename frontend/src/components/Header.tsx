@@ -218,7 +218,7 @@ export default function Header() {
 
         {/* User & Favorites & Cart */}
         <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
-          <Link href={user ? '/orders' : '/login'} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
+          <Link href={user ? '/profile' : '/login'} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <User size={20} className="text-gray-500" />
             <span className="text-[10px] text-gray-400 mt-0.5">{user ? user.name.split(' ')[0] : 'Войти'}</span>
           </Link>

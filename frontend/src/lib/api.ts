@@ -100,6 +100,13 @@ export const adminUpdateCategory = (id: number, data: Record<string, any>) =>
 export const adminDeleteCategory = (id: number) =>
   api.delete(`/categories/${id}`).then((r) => r.data);
 
+// Profile
+export const updateProfile = (data: { name?: string; phone?: string }) =>
+  api.patch('/auth/profile', data).then((r) => r.data);
+
+export const changePassword = (oldPassword: string, newPassword: string) =>
+  api.patch('/auth/password', { oldPassword, newPassword }).then((r) => r.data);
+
 // Reviews
 export const createReview = (data: { productId: number; rating: number; comment?: string }) =>
   api.post('/reviews', data).then((r) => r.data);

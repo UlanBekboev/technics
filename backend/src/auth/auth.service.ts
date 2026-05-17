@@ -47,6 +47,24 @@ export class AuthService {
     });
   }
 
+  async updateProfile(userId: number, data: { name?: string; phone?: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
+    });
+    return user;
+  }
+
+  async changePassword(userId: number, oldPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const valid = await bcrypt.compare(oldPassword, user.password);
+    if (!valid) throw new UnauthorizedException('Неверный текущий пароль');
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+    return { message: 'Пароль изменён' };
+  }
+
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     // Не раскрываем, существует ли email
