@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, User, Phone, MapPin, Menu, X } from 'lucide-react';
+import { Search, ShoppingCart, User, Phone, MapPin, Menu, X, Heart } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
-import { getProducts, getMe } from '@/lib/api';
+import { useFavoritesStore } from '@/store/favorites';
+import { getProducts, getMe, getFavoriteIds } from '@/lib/api';
 import Logo from './Logo';
 
 const NAV_LINKS = [
@@ -37,12 +38,13 @@ export default function Header() {
   const wrapRef                   = useRef<HTMLFormElement>(null);
   const { count } = useCartStore();
   const { user, logout, setAuth, token } = useAuthStore();
+  const { count: favCount, setIds: setFavIds } = useFavoritesStore();
 
   useEffect(() => {
     setMounted(true);
-    // Refresh user data from server to pick up role changes
     if (token) {
       getMe().then(fresh => setAuth(fresh, token)).catch(() => {});
+      getFavoriteIds().then(setFavIds).catch(() => {});
     }
   }, []);
 
@@ -214,11 +216,21 @@ export default function Header() {
           </div>
         </form>
 
-        {/* User & Cart */}
+        {/* User & Favorites & Cart */}
         <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
           <Link href={user ? '/orders' : '/login'} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <User size={20} className="text-gray-500" />
             <span className="text-[10px] text-gray-400 mt-0.5">{user ? user.name.split(' ')[0] : 'Войти'}</span>
+          </Link>
+
+          <Link href="/favorites" className="relative flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <Heart size={20} className="text-gray-500" />
+            <span className="text-[10px] text-gray-400 mt-0.5">Избранное</span>
+            {mounted && favCount() > 0 && (
+              <span className="absolute top-1 right-1 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold" style={{ background: '#E53E3E' }}>
+                {favCount()}
+              </span>
+            )}
           </Link>
 
           <Link

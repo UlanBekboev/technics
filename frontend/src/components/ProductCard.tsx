@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
-import { addToCart } from '@/lib/api';
+import { useFavoritesStore } from '@/store/favorites';
+import { useAuthStore } from '@/store/auth';
+import { addToCart, toggleFavorite } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 interface Product {
@@ -18,12 +20,15 @@ interface Product {
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCartStore();
+  const { has, toggle } = useFavoritesStore();
+  const { user } = useAuthStore();
   const router = useRouter();
 
   const img = product.images?.find((i) => i.isMain) || product.images?.[0];
   const discount = product.oldPrice
     ? Math.round((1 - Number(product.price) / Number(product.oldPrice)) * 100)
     : null;
+  const isFav = has(product.id);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -39,6 +44,17 @@ export default function ProductCard({ product }: { product: Product }) {
       });
     }
     router.push('/cart');
+  };
+
+  const handleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) { router.push('/login'); return; }
+    toggle(product.id);
+    try {
+      await toggleFavorite(product.id);
+    } catch {
+      toggle(product.id);
+    }
   };
 
   return (
@@ -69,6 +85,17 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="text-xs text-gray-400 font-medium">Нет в наличии</span>
           </div>
         )}
+
+        {/* Favorite button */}
+        <button
+          onClick={handleFavorite}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+        >
+          <Heart
+            size={14}
+            className={isFav ? 'text-red-500 fill-red-500' : 'text-gray-400'}
+          />
+        </button>
       </div>
 
       {/* Info */}

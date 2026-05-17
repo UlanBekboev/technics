@@ -100,6 +100,16 @@ export const adminUpdateCategory = (id: number, data: Record<string, any>) =>
 export const adminDeleteCategory = (id: number) =>
   api.delete(`/categories/${id}`).then((r) => r.data);
 
+// Favorites
+export const getFavorites = () =>
+  api.get('/favorites').then((r) => r.data);
+
+export const getFavoriteIds = () =>
+  api.get('/favorites/ids').then((r) => r.data as number[]);
+
+export const toggleFavorite = (productId: number) =>
+  api.post(`/favorites/${productId}`).then((r) => r.data as { added: boolean });
+
 // Upload image via Cloudinary
 export const uploadImage = (file: File) => {
   const form = new FormData();
