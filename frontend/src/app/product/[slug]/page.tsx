@@ -2,8 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ShoppingCart, Star, Check, Phone, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getProduct, getFeatured, getProducts, addToCart } from '@/lib/api';
+import { getProduct, getFeatured, getProducts, addToCart, createReview, deleteReview } from '@/lib/api';
 import { useCartStore } from '@/store/cart';
+import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 
@@ -80,7 +81,14 @@ export default function ProductPage() {
   const [recommended, setRecommended] = useState<any[]>([]);
 
   const { addItem } = useCartStore();
+  const { user } = useAuthStore();
   const router = useRouter();
+
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewHover, setReviewHover] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -102,6 +110,29 @@ export default function ProductPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [slug]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) { router.push('/login'); return; }
+    setSubmittingReview(true);
+    setReviewError('');
+    try {
+      const newReview = await createReview({ productId: product.id, rating: reviewRating, comment: reviewComment || undefined });
+      setProduct((prev: any) => ({ ...prev, reviews: [newReview, ...(prev.reviews ?? [])] }));
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err: any) {
+      setReviewError(err?.response?.data?.message ?? 'Ошибка при отправке отзыва');
+    }
+    setSubmittingReview(false);
+  };
+
+  const handleDeleteReview = async (reviewId: number) => {
+    try {
+      await deleteReview(reviewId);
+      setProduct((prev: any) => ({ ...prev, reviews: prev.reviews.filter((r: any) => r.id !== reviewId) }));
+    } catch {}
+  };
 
   const handleAddToCart = async () => {
     setAdding(true);
@@ -334,21 +365,92 @@ export default function ProductPage() {
               </div>
             ) : (
               <div>
+                {/* Review form */}
+                {(() => {
+                  const alreadyReviewed = user && product.reviews?.some((r: any) => r.userId === user.id);
+                  return !alreadyReviewed ? (
+                    <div className="bg-gray-50 rounded-xl p-5 mb-6">
+                      <h3 className="text-sm font-bold text-gray-800 mb-3">
+                        {user ? 'Оставить отзыв' : 'Войдите, чтобы оставить отзыв'}
+                      </h3>
+                      {user ? (
+                        <form onSubmit={handleSubmitReview} className="space-y-3">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1.5">Оценка</p>
+                            <div className="flex gap-1">
+                              {[1,2,3,4,5].map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => setReviewRating(s)}
+                                  onMouseEnter={() => setReviewHover(s)}
+                                  onMouseLeave={() => setReviewHover(0)}
+                                >
+                                  <Star
+                                    size={24}
+                                    className={s <= (reviewHover || reviewRating)
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'fill-gray-200 text-gray-200'}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <textarea
+                            rows={3}
+                            placeholder="Ваш отзыв (необязательно)"
+                            value={reviewComment}
+                            onChange={(e) => setReviewComment(e.target.value)}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none bg-white"
+                          />
+                          {reviewError && <p className="text-xs text-red-500">{reviewError}</p>}
+                          <button
+                            type="submit"
+                            disabled={submittingReview}
+                            className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                            style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}
+                          >
+                            {submittingReview ? 'Отправка...' : 'Опубликовать'}
+                          </button>
+                        </form>
+                      ) : (
+                        <Link href="/login" className="text-sm text-blue-600 hover:underline">Войти</Link>
+                      )}
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Reviews list */}
                 {reviewCount === 0 ? (
                   <p className="text-sm text-gray-400">Отзывов пока нет. Будьте первым!</p>
                 ) : (
                   <div className="space-y-4">
                     {product.reviews.map((r: any) => (
-                      <div key={r.id} className="border-b border-gray-100 pb-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="flex">
-                            {[1,2,3,4,5].map((s) => (
-                              <Star key={s} size={12} className={s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'} />
-                            ))}
+                      <div key={r.id} className="border-b border-gray-100 pb-4 last:border-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="flex">
+                                {[1,2,3,4,5].map((s) => (
+                                  <Star key={s} size={12} className={s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'} />
+                                ))}
+                              </div>
+                              <span className="text-xs font-semibold text-gray-700">{r.user?.name}</span>
+                              <span className="text-xs text-gray-400">
+                                {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </span>
+                            </div>
+                            {r.comment && <p className="text-sm text-gray-600">{r.comment}</p>}
                           </div>
-                          <span className="text-xs font-medium text-gray-700">{r.user?.name}</span>
+                          {user && (user.id === r.userId || user.role === 'ADMIN') && (
+                            <button
+                              onClick={() => handleDeleteReview(r.id)}
+                              className="text-xs text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
+                            >
+                              Удалить
+                            </button>
+                          )}
                         </div>
-                        {r.comment && <p className="text-sm text-gray-600">{r.comment}</p>}
                       </div>
                     ))}
                   </div>

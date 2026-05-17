@@ -100,6 +100,13 @@ export const adminUpdateCategory = (id: number, data: Record<string, any>) =>
 export const adminDeleteCategory = (id: number) =>
   api.delete(`/categories/${id}`).then((r) => r.data);
 
+// Reviews
+export const createReview = (data: { productId: number; rating: number; comment?: string }) =>
+  api.post('/reviews', data).then((r) => r.data);
+
+export const deleteReview = (id: number) =>
+  api.delete(`/reviews/${id}`).then((r) => r.data);
+
 // Favorites
 export const getFavorites = () =>
   api.get('/favorites').then((r) => r.data);
