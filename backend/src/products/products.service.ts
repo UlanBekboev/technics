@@ -81,4 +81,90 @@ export class ProductsService {
   findBrands() {
     return this.prisma.brand.findMany({ orderBy: { name: 'asc' } });
   }
+
+  findAllAdmin() {
+    return this.prisma.product.findMany({
+      include: { images: true, category: true, brand: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async create(data: {
+    name: string;
+    slug: string;
+    description?: string;
+    price: number;
+    oldPrice?: number;
+    stock?: number;
+    isActive?: boolean;
+    categoryId: number;
+    brandId?: number;
+    images?: { url: string; isMain?: boolean }[];
+    specs?: { key: string; value: string }[];
+  }) {
+    const { images, specs, ...rest } = data;
+    return this.prisma.product.create({
+      data: {
+        ...rest,
+        images: images?.length ? { create: images } : undefined,
+        specs: specs?.length ? { create: specs } : undefined,
+      },
+      include: { images: true, category: true, brand: true, specs: true },
+    });
+  }
+
+  async update(
+    id: number,
+    data: {
+      name?: string;
+      slug?: string;
+      description?: string;
+      price?: number;
+      oldPrice?: number;
+      stock?: number;
+      isActive?: boolean;
+      categoryId?: number;
+      brandId?: number;
+      images?: { url: string; isMain?: boolean }[];
+      specs?: { key: string; value: string }[];
+    },
+  ) {
+    const { images, specs, ...rest } = data;
+
+    await this.prisma.product.findUniqueOrThrow({ where: { id } });
+
+    if (images !== undefined) {
+      await this.prisma.productImage.deleteMany({ where: { productId: id } });
+    }
+    if (specs !== undefined) {
+      await this.prisma.productSpec.deleteMany({ where: { productId: id } });
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        ...rest,
+        images: images?.length ? { create: images } : undefined,
+        specs: specs?.length ? { create: specs } : undefined,
+      },
+      include: { images: true, category: true, brand: true, specs: true },
+    });
+  }
+
+  async remove(id: number) {
+    await this.prisma.product.findUniqueOrThrow({ where: { id } });
+    return this.prisma.product.delete({ where: { id } });
+  }
+
+  async createBrand(data: { name: string; slug: string; logoUrl?: string }) {
+    return this.prisma.brand.create({ data });
+  }
+
+  async updateBrand(id: number, data: { name?: string; slug?: string; logoUrl?: string }) {
+    return this.prisma.brand.update({ where: { id }, data });
+  }
+
+  async removeBrand(id: number) {
+    return this.prisma.brand.delete({ where: { id } });
+  }
 }

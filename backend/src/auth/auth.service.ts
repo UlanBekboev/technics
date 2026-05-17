@@ -1,11 +1,22 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private mail: MailService,
+  ) {}
 
   async register(email: string, password: string, name: string, phone?: string) {
     const exists = await this.prisma.user.findUnique({ where: { email } });
@@ -34,6 +45,48 @@ export class AuthService {
       where: { id: userId },
       select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
     });
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    // Не раскрываем, существует ли email
+    if (!user) return { message: 'Если такой email зарегистрирован, мы отправили код' };
+
+    // Удаляем старые токены для этого email
+    await this.prisma.passwordResetToken.deleteMany({ where: { email } });
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 минут
+
+    await this.prisma.passwordResetToken.create({ data: { email, code, expiresAt } });
+    await this.mail.sendPasswordResetCode(email, code);
+
+    return { message: 'Если такой email зарегистрирован, мы отправили код' };
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const token = await this.prisma.passwordResetToken.findFirst({
+      where: { email },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!token || token.code !== code) {
+      throw new BadRequestException('Неверный код подтверждения');
+    }
+
+    if (token.expiresAt < new Date()) {
+      await this.prisma.passwordResetToken.delete({ where: { id: token.id } });
+      throw new BadRequestException('Код истёк, запросите новый');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
+    await this.prisma.passwordResetToken.deleteMany({ where: { email } });
+
+    return this.signToken(user.id, user.email, user.role);
   }
 
   private signToken(userId: number, email: string, role: string) {
