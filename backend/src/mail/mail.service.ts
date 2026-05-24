@@ -4,16 +4,26 @@ import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
-  private resend: Resend;
+  private resend: Resend | null = null;
   private from: string;
   private readonly logger = new Logger(MailService.name);
 
   constructor(private config: ConfigService) {
-    this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
+    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
+    } else {
+      this.logger.warn('RESEND_API_KEY not set — email sending is disabled');
+    }
     this.from = this.config.get<string>('MAIL_FROM') || 'Technics <noreply@technics.store>';
   }
 
+  private get isEnabled(): boolean {
+    return this.resend !== null;
+  }
+
   async sendOrderConfirmation(to: string, order: any, userName: string): Promise<void> {
+    if (!this.isEnabled) return;
     const itemRows = order.items
       .map(
         (i: any) => `
@@ -25,7 +35,7 @@ export class MailService {
       )
       .join('');
 
-    const { error } = await this.resend.emails.send({
+    const { error } = await this.resend!.emails.send({
       from: this.from,
       to,
       subject: `Заказ #${order.id} принят — Technics`,
@@ -73,11 +83,12 @@ export class MailService {
   }
 
   async sendNewOrderAlert(adminEmail: string, order: any, user: any): Promise<void> {
+    if (!this.isEnabled) return;
     const lines = order.items
       .map((i: any) => `• ${i.product.name} × ${i.quantity} — ${(Number(i.price) * i.quantity).toLocaleString('ru')} сом`)
       .join('<br>');
 
-    const { error } = await this.resend.emails.send({
+    const { error } = await this.resend!.emails.send({
       from: this.from,
       to: adminEmail,
       subject: `🛒 Новый заказ #${order.id} на ${Number(order.total).toLocaleString('ru')} сом`,
@@ -108,7 +119,11 @@ export class MailService {
   }
 
   async sendPasswordResetCode(to: string, code: string): Promise<void> {
-    const { error } = await this.resend.emails.send({
+    if (!this.isEnabled) {
+      this.logger.warn(`Password reset code for ${to}: ${code} (email disabled)`);
+      return;
+    }
+    const { error } = await this.resend!.emails.send({
       from: this.from,
       to,
       subject: 'Код для сброса пароля — Technics',
