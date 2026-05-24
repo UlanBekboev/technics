@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from '../mail/mail.service';
 import axios from 'axios';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private mail: MailService,
   ) {}
 
   async createOrder(userId: number, address: string, comment?: string) {
@@ -44,6 +46,10 @@ export class OrdersService {
     await this.prisma.cartItem.deleteMany({ where: { userId } });
 
     this.sendTelegramNotification(order, user, cartItems).catch(() => {});
+
+    const adminEmail = this.config.get<string>('ADMIN_EMAIL');
+    if (user?.email) this.mail.sendOrderConfirmation(user.email, order, user.name ?? '').catch(() => {});
+    if (adminEmail) this.mail.sendNewOrderAlert(adminEmail, order, user).catch(() => {});
 
     return order;
   }

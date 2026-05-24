@@ -18,4 +18,20 @@ export class CategoriesService {
       include: { subcategories: true },
     });
   }
+
+  create(data: { name: string; slug: string; imageUrl?: string; parentId?: number }) {
+    return this.prisma.category.create({ data, include: { subcategories: true } });
+  }
+
+  update(id: number, data: { name?: string; slug?: string; imageUrl?: string; parentId?: number | null }) {
+    return this.prisma.category.update({ where: { id }, data, include: { subcategories: true } });
+  }
+
+  remove(id: number) {
+    return this.prisma.category.delete({ where: { id } });
+  }
+
+  findAllFlat() {
+    return this.prisma.category.findMany({ orderBy: { name: 'asc' } });
+  }
 }

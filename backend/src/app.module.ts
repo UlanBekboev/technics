@@ -7,6 +7,9 @@ import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { UploadModule } from './upload/upload.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { UploadModule } from './upload/upload.module';
     CartModule,
     OrdersModule,
     UploadModule,
+    CloudinaryModule,
+    FavoritesModule,
+    ReviewsModule,
   ],
 })
 export class AppModule {}

@@ -19,7 +19,6 @@ export class ProductsService {
     limit?: number;
   }) {
     const { categorySlug, brandId, minPrice, maxPrice, search, page = 1, limit = 20 } = query;
-
     const where: any = { isActive: true };
 
     if (categorySlug) {
@@ -30,7 +29,6 @@ export class ProductsService {
         where.categoryId = { in: ids };
       }
     }
-
     if (brandId) where.brandId = brandId;
     if (minPrice || maxPrice) {
       where.price = {};
@@ -62,10 +60,7 @@ export class ProductsService {
     const product = await this.prisma.product.findUnique({
       where: { slug },
       include: {
-        images: true,
-        category: true,
-        brand: true,
-        specs: true,
+        images: true, category: true, brand: true, specs: true,
         reviews: { include: { user: { select: { name: true } } } },
       },
     });
@@ -93,32 +88,50 @@ export class ProductsService {
       where: search ? { name: { contains: search, mode: 'insensitive' } } : undefined,
       include: { images: true, category: true, brand: true },
       orderBy: { createdAt: 'desc' },
-      take: 100,
     });
   }
 
-  async createProduct(dto: {
+  async create(data: {
     name: string; slug: string; description?: string;
     price: number; oldPrice?: number; stock?: number;
-    categoryId: number; brandId?: number; isActive?: boolean;
+    isActive?: boolean; categoryId: number; brandId?: number;
+    images?: { url: string; isMain?: boolean }[];
+    specs?: { key: string; value: string }[];
   }) {
-    return this.prisma.product.create({ data: dto, include: { images: true, category: true, brand: true } });
-  }
-
-  async updateProduct(id: number, dto: Partial<{
-    name: string; slug: string; description: string;
-    price: number; oldPrice: number; stock: number;
-    categoryId: number; brandId: number; isActive: boolean;
-  }>) {
-    return this.prisma.product.update({
-      where: { id },
-      data: dto,
-      include: { images: true, category: true, brand: true },
+    const { images, specs, ...rest } = data;
+    return this.prisma.product.create({
+      data: {
+        ...rest,
+        images: images?.length ? { create: images } : undefined,
+        specs:  specs?.length  ? { create: specs }  : undefined,
+      },
+      include: { images: true, category: true, brand: true, specs: true },
     });
   }
 
-  async deleteProduct(id: number) {
-    // delete images from Cloudinary first
+  async update(id: number, data: {
+    name?: string; slug?: string; description?: string;
+    price?: number; oldPrice?: number; stock?: number;
+    isActive?: boolean; categoryId?: number; brandId?: number;
+    images?: { url: string; isMain?: boolean }[];
+    specs?: { key: string; value: string }[];
+  }) {
+    const { images, specs, ...rest } = data;
+    await this.prisma.product.findUniqueOrThrow({ where: { id } });
+    if (images !== undefined) await this.prisma.productImage.deleteMany({ where: { productId: id } });
+    if (specs  !== undefined) await this.prisma.productSpec.deleteMany({ where: { productId: id } });
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        ...rest,
+        images: images?.length ? { create: images } : undefined,
+        specs:  specs?.length  ? { create: specs }  : undefined,
+      },
+      include: { images: true, category: true, brand: true, specs: true },
+    });
+  }
+
+  async remove(id: number) {
     const product = await this.prisma.product.findUnique({ where: { id }, include: { images: true } });
     if (product) {
       for (const img of product.images) {
@@ -127,6 +140,8 @@ export class ProductsService {
     }
     return this.prisma.product.delete({ where: { id } });
   }
+
+  // ── Image management ──────────────────────────────────────
 
   async addImage(productId: number, file: Express.Multer.File, isMain = false) {
     const url = await this.upload.uploadImage(file, 'technics/products');
@@ -145,5 +160,19 @@ export class ProductsService {
   async setMainImage(imageId: number, productId: number) {
     await this.prisma.productImage.updateMany({ where: { productId }, data: { isMain: false } });
     return this.prisma.productImage.update({ where: { id: imageId }, data: { isMain: true } });
+  }
+
+  // ── Brands ────────────────────────────────────────────────
+
+  async createBrand(data: { name: string; slug: string; logoUrl?: string }) {
+    return this.prisma.brand.create({ data });
+  }
+
+  async updateBrand(id: number, data: { name?: string; slug?: string; logoUrl?: string }) {
+    return this.prisma.brand.update({ where: { id }, data });
+  }
+
+  async removeBrand(id: number) {
+    return this.prisma.brand.delete({ where: { id } });
   }
 }

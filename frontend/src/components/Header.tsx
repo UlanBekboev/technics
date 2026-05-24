@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingCart, User, Phone, MapPin, Menu, X, ChevronRight, ChevronDown } from 'lucide-react';
+import { Search, ShoppingCart, User, Phone, MapPin, Menu, X, ChevronRight, ChevronDown, Heart } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
-import { getProducts, getMe, getCategories } from '@/lib/api';
+import { useFavoritesStore } from '@/store/favorites';
+import { getProducts, getMe, getCategories, getFavoriteIds } from '@/lib/api';
 import Logo from './Logo';
 
 interface SubCategory { id: number; name: string; slug: string; }
@@ -42,22 +43,22 @@ export default function Header() {
   const wrapRef = useRef<HTMLFormElement>(null);
   const { count } = useCartStore();
   const { user, logout, setAuth, token } = useAuthStore();
+  const { count: favCount, setIds: setFavIds } = useFavoritesStore();
 
   useEffect(() => {
     setMounted(true);
     if (token) {
       getMe().then(fresh => setAuth(fresh, token)).catch(() => {});
+      getFavoriteIds().then(setFavIds).catch(() => {});
     }
     getCategories().then(setCategories).catch(() => {});
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileMenuOpen]);
 
-  // Debounced live search
   useEffect(() => {
     const q = search.trim();
     if (q.length < 2) { setResults([]); setOpen(false); return; }
@@ -93,16 +94,13 @@ export default function Header() {
     window.location.href = `/product/${slug}`;
   };
 
-  const closeMenu = () => {
-    setMobileMenuOpen(false);
-    setExpandedCat(null);
-  };
+  const closeMenu = () => { setMobileMenuOpen(false); setExpandedCat(null); };
 
   return (
     <>
       <header className="bg-white sticky top-0 z-50 shadow-md">
 
-        {/* ── Top navigation bar (desktop only) ── */}
+        {/* ── Top bar (desktop only) ── */}
         <div className="hidden md:block text-white text-xs" style={{ background: TOPBAR_BG }}>
           <div className="max-w-7xl mx-auto px-4 h-9 flex items-center justify-between gap-4">
             <nav className="flex items-center gap-0">
@@ -130,10 +128,10 @@ export default function Header() {
               </span>
               {user ? (
                 <>
-                  <Link href="/orders" className="hover:text-amber-300 transition-colors">{user.name}</Link>
+                  <Link href="/profile" className="hover:text-amber-300 transition-colors">{user.name}</Link>
                   {user.role === 'ADMIN' && (
                     <>
-                      <Link href="/admin/orders" className="hover:text-amber-300 transition-colors">Заказы</Link>
+                      <Link href="/admin/orders"   className="hover:text-amber-300 transition-colors">Заказы</Link>
                       <Link href="/admin/products" className="hover:text-amber-300 transition-colors">Товары</Link>
                     </>
                   )}
@@ -149,17 +147,13 @@ export default function Header() {
           </div>
         </div>
 
-        {/* ── Main row: logo · search · user · cart ── */}
+        {/* ── Main row ── */}
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
           <Link href="/" className="flex-shrink-0 flex items-center gap-2.5">
             <Logo size={44} />
             <div className="leading-tight hidden sm:block">
-              <div className="text-[15px] font-black tracking-widest uppercase" style={{ color: '#0057B8' }}>
-                TECHNICS
-              </div>
-              <div className="text-[9px] text-gray-400 tracking-[0.18em] uppercase">
-                Интернет-магазин
-              </div>
+              <div className="text-[15px] font-black tracking-widest uppercase" style={{ color: '#0057B8' }}>TECHNICS</div>
+              <div className="text-[9px] text-gray-400 tracking-[0.18em] uppercase">Интернет-магазин</div>
             </div>
           </Link>
 
@@ -172,47 +166,27 @@ export default function Header() {
                 placeholder="Живой поиск..."
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 pr-12 text-sm focus:outline-none bg-gray-50 focus:bg-white focus:border-blue-400 transition-all"
               />
-              <button
-                type="submit"
-                className="absolute right-0 top-0 h-full px-4 rounded-r-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity"
-                style={{ background: TOPBAR_BG }}
-              >
-                {searching
-                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : <Search size={16} />}
+              <button type="submit" className="absolute right-0 top-0 h-full px-4 rounded-r-xl flex items-center justify-center text-white hover:opacity-90 transition-opacity" style={{ background: TOPBAR_BG }}>
+                {searching ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Search size={16} />}
               </button>
-
               {open && results.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden">
                   {results.map((p) => {
                     const img = p.images?.find((i: any) => i.isMain) || p.images?.[0];
                     return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handleSelect(p.slug)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors text-left"
-                      >
+                      <button key={p.id} type="button" onClick={() => handleSelect(p.slug)} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors text-left">
                         <div className="w-10 h-10 flex-shrink-0 rounded-lg border border-gray-100 overflow-hidden bg-gray-50 flex items-center justify-center">
-                          {img
-                            ? <img src={img.url} alt="" className="w-full h-full object-contain p-0.5" />
-                            : <Search size={14} className="text-gray-300" />}
+                          {img ? <img src={img.url} alt="" className="w-full h-full object-contain p-0.5" /> : <Search size={14} className="text-gray-300" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-gray-800 truncate">{p.name}</p>
                           {p.brand && <p className="text-[10px] text-gray-400">{p.brand.name}</p>}
                         </div>
-                        <span className="text-sm font-bold flex-shrink-0" style={{ color: '#E53E3E' }}>
-                          {Number(p.price).toLocaleString()} сом
-                        </span>
+                        <span className="text-sm font-bold flex-shrink-0" style={{ color: '#E53E3E' }}>{Number(p.price).toLocaleString()} сом</span>
                       </button>
                     );
                   })}
-                  <button
-                    type="submit"
-                    className="w-full text-center text-xs font-medium py-2.5 border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                    style={{ color: TOPBAR_BG }}
-                  >
+                  <button type="submit" className="w-full text-center text-xs font-medium py-2.5 border-t border-gray-100 hover:bg-gray-50 transition-colors" style={{ color: TOPBAR_BG }}>
                     Смотреть все результаты по «{search}»
                   </button>
                 </div>
@@ -220,18 +194,26 @@ export default function Header() {
             </div>
           </form>
 
+          {/* User / Favorites / Cart */}
           <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
-            <Link href={user ? '/orders' : '/login'} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <Link href={user ? '/profile' : '/login'} className="flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
               <User size={20} className="text-gray-500" />
               <span className="text-[10px] text-gray-400 mt-0.5">{user ? user.name.split(' ')[0] : 'Войти'}</span>
             </Link>
+
+            <Link href="/favorites" className="relative flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
+              <Heart size={20} className="text-gray-500" />
+              <span className="text-[10px] text-gray-400 mt-0.5">Избранное</span>
+              {mounted && favCount() > 0 && (
+                <span className="absolute top-1 right-1 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold" style={{ background: '#E53E3E' }}>{favCount()}</span>
+              )}
+            </Link>
+
             <Link href="/cart" className="relative flex flex-col items-center p-2 hover:bg-gray-100 rounded-xl transition-colors">
               <ShoppingCart size={20} className="text-gray-500" />
               <span className="text-[10px] text-gray-400 mt-0.5">Корзина</span>
               {mounted && count() > 0 && (
-                <span className="absolute top-1 right-1 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold" style={{ background: '#E53E3E' }}>
-                  {count()}
-                </span>
+                <span className="absolute top-1 right-1 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold" style={{ background: '#E53E3E' }}>{count()}</span>
               )}
             </Link>
           </div>
@@ -241,19 +223,11 @@ export default function Header() {
         <div className="border-t border-gray-100 bg-white">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center gap-2 overflow-x-auto py-2" style={{ scrollbarWidth: 'none' }}>
-              {/* Hamburger — mobile only */}
-              <button
-                onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600"
-              >
+              <button onClick={() => setMobileMenuOpen(true)} className="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600">
                 <Menu size={16} />
               </button>
               {QUICK_CATS.map((cat) => (
-                <a
-                  key={cat.href}
-                  href={cat.href}
-                  className="flex-shrink-0 text-xs font-medium px-3.5 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-all whitespace-nowrap"
-                >
+                <a key={cat.href} href={cat.href} className="flex-shrink-0 text-xs font-medium px-3.5 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-all whitespace-nowrap">
                   {cat.label}
                 </a>
               ))}
@@ -262,67 +236,37 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ── Full-screen mobile menu overlay ── */}
+      {/* ── Full-screen mobile menu ── */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-[100] flex flex-col bg-white">
-          {/* Header row */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100" style={{ background: TOPBAR_BG }}>
             <span className="text-white font-semibold text-sm">Меню</span>
-            <button onClick={closeMenu} className="text-white p-1">
-              <X size={22} />
-            </button>
+            <button onClick={closeMenu} className="text-white p-1"><X size={22} /></button>
           </div>
-
-          {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto">
-            {/* Nav links */}
             <div className="border-b border-gray-100">
               {NAV_LINKS.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={closeMenu}
-                  className="flex items-center justify-between px-4 py-3.5 text-sm font-medium text-gray-800 border-b border-gray-50 active:bg-gray-50"
-                >
-                  {item.label}
-                  <ChevronRight size={16} className="text-gray-300" />
+                <Link key={item.label} href={item.href} onClick={closeMenu} className="flex items-center justify-between px-4 py-3.5 text-sm font-medium text-gray-800 border-b border-gray-50 active:bg-gray-50">
+                  {item.label}<ChevronRight size={16} className="text-gray-300" />
                 </Link>
               ))}
             </div>
-
-            {/* Categories accordion */}
             <div>
               {categories.map((cat) => (
                 <div key={cat.id} className="border-b border-gray-100">
-                  <button
-                    onClick={() => setExpandedCat(expandedCat === cat.id ? null : cat.id)}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium text-gray-800 active:bg-gray-50"
-                  >
+                  <button onClick={() => setExpandedCat(expandedCat === cat.id ? null : cat.id)} className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium text-gray-800 active:bg-gray-50">
                     {cat.name}
                     {cat.subcategories?.length > 0
-                      ? expandedCat === cat.id
-                        ? <ChevronDown size={16} className="text-blue-500" />
-                        : <ChevronRight size={16} className="text-gray-300" />
-                      : <ChevronRight size={16} className="text-gray-300" />
-                    }
+                      ? expandedCat === cat.id ? <ChevronDown size={16} className="text-blue-500" /> : <ChevronRight size={16} className="text-gray-300" />
+                      : <ChevronRight size={16} className="text-gray-300" />}
                   </button>
-
                   {expandedCat === cat.id && cat.subcategories?.length > 0 && (
                     <div className="bg-gray-50 border-t border-gray-100">
-                      <Link
-                        href={`/catalog?category=${cat.slug}`}
-                        onClick={closeMenu}
-                        className="flex items-center px-6 py-3 text-sm font-semibold text-blue-700 border-b border-gray-100 active:bg-blue-50"
-                      >
+                      <Link href={`/catalog?category=${cat.slug}`} onClick={closeMenu} className="flex items-center px-6 py-3 text-sm font-semibold text-blue-700 border-b border-gray-100 active:bg-blue-50">
                         Все в «{cat.name}»
                       </Link>
                       {cat.subcategories.map((sub) => (
-                        <Link
-                          key={sub.id}
-                          href={`/catalog?category=${sub.slug}`}
-                          onClick={closeMenu}
-                          className="flex items-center px-6 py-3 text-sm text-gray-600 border-b border-gray-50 active:bg-gray-100"
-                        >
+                        <Link key={sub.id} href={`/catalog?category=${sub.slug}`} onClick={closeMenu} className="flex items-center px-6 py-3 text-sm text-gray-600 border-b border-gray-50 active:bg-gray-100">
                           {sub.name}
                         </Link>
                       ))}
@@ -331,42 +275,20 @@ export default function Header() {
                 </div>
               ))}
             </div>
-
-            {/* Contacts */}
             <div className="px-4 py-4 border-t border-gray-100 flex flex-col gap-3">
-              <a href="tel:+996700916121" className="flex items-center gap-2 text-sm text-gray-600">
-                <Phone size={15} className="text-blue-500" /> +996 700 916 121
-              </a>
-              <a href="tel:+996551916122" className="flex items-center gap-2 text-sm text-gray-600">
-                <Phone size={15} className="text-blue-500" /> +996 551 916 122
-              </a>
-              <span className="flex items-center gap-2 text-sm text-gray-400">
-                <MapPin size={15} className="text-blue-500" /> г. Бишкек
-              </span>
+              <a href="tel:+996700916121" className="flex items-center gap-2 text-sm text-gray-600"><Phone size={15} className="text-blue-500" /> +996 700 916 121</a>
+              <a href="tel:+996551916122" className="flex items-center gap-2 text-sm text-gray-600"><Phone size={15} className="text-blue-500" /> +996 551 916 122</a>
+              <span className="flex items-center gap-2 text-sm text-gray-400"><MapPin size={15} className="text-blue-500" /> г. Бишкек</span>
             </div>
-
-            {/* Auth */}
             <div className="px-4 pb-6">
               {user ? (
-                <button
-                  onClick={() => { logout(); closeMenu(); }}
-                  className="w-full py-3 text-sm font-semibold text-red-500 border border-red-200 rounded-xl"
-                >
+                <button onClick={() => { logout(); closeMenu(); }} className="w-full py-3 text-sm font-semibold text-red-500 border border-red-200 rounded-xl">
                   Выйти из аккаунта
                 </button>
               ) : (
                 <div className="flex gap-3">
-                  <Link href="/login" onClick={closeMenu}
-                    className="flex-1 py-3 text-center text-sm font-semibold text-white rounded-xl"
-                    style={{ background: 'linear-gradient(135deg, #003d8f, #0077e6)' }}
-                  >
-                    Войти
-                  </Link>
-                  <Link href="/register" onClick={closeMenu}
-                    className="flex-1 py-3 text-center text-sm font-semibold text-blue-700 border border-blue-200 rounded-xl"
-                  >
-                    Регистрация
-                  </Link>
+                  <Link href="/login" onClick={closeMenu} className="flex-1 py-3 text-center text-sm font-semibold text-white rounded-xl" style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>Войти</Link>
+                  <Link href="/register" onClick={closeMenu} className="flex-1 py-3 text-center text-sm font-semibold text-blue-700 border border-blue-200 rounded-xl">Регистрация</Link>
                 </div>
               )}
             </div>

@@ -86,7 +86,8 @@
       "Bash(psql \"postgresql://postgres:AJgHnGNePVlFIsWCYYkGnrUmBhbvDHnJ@viaduct.proxy.rlwy.net:53365/railway\" -c \"UPDATE \\\\\"User\\\\\" SET role = 'ADMIN' WHERE email = '1technicskg@gmail.com'; DELETE FROM \\\\\"User\\\\\" WHERE email IN \\('dbtest_check@test.com', 'dbcheck2@test.com'\\); SELECT id, email, role FROM \\\\\"User\\\\\";\")",
       "Bash(curl -sk -H \"Origin: https://technics-rouge.vercel.app\" \"https://technics-production.up.railway.app/api/categories\" -I)",
       "Bash(curl -sk \"https://technics-rouge.vercel.app\")",
-      "Bash(node scripts/upload-to-cloudinary.js)"
+      "Bash(node scripts/upload-to-cloudinary.js)",
+      "Bash(git checkout *)"
     ],
     "additionalDirectories": [
       "\\tmp"

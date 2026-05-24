@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: technics_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: technics
+    ports:
+      - "5432:5432"
+    volumes:
+      - technics_pgdata:/var/lib/postgresql/data
+
+volumes:
+  technics_pgdata:

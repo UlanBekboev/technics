@@ -41,10 +41,14 @@ export class ProductsController {
   @Get('brands')
   findBrands() { return this.service.findBrands(); }
 
-  @Get(':slug')
-  findOne(@Param('slug') slug: string) { return this.service.findOne(slug); }
+  // ── Admin (legacy routes kept for compatibility) ──
 
-  // ── Admin ─────────────────────────────────────
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard)
+  findAllAdminLegacy(@Request() req: any) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+    return this.service.findAllAdmin();
+  }
 
   @Get('admin/list')
   @UseGuards(JwtAuthGuard)
@@ -57,21 +61,21 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard)
   adminCreate(@Request() req: any, @Body() dto: any) {
     if (req.user.role !== 'ADMIN') throw new ForbiddenException();
-    return this.service.createProduct(dto);
+    return this.service.create(dto);
   }
 
   @Put('admin/:id')
   @UseGuards(JwtAuthGuard)
   adminUpdate(@Request() req: any, @Param('id', ParseIntPipe) id: number, @Body() dto: any) {
     if (req.user.role !== 'ADMIN') throw new ForbiddenException();
-    return this.service.updateProduct(id, dto);
+    return this.service.update(id, dto);
   }
 
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard)
   adminDelete(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     if (req.user.role !== 'ADMIN') throw new ForbiddenException();
-    return this.service.deleteProduct(id);
+    return this.service.remove(id);
   }
 
   @Post('admin/:id/images')
@@ -104,4 +108,51 @@ export class ProductsController {
     if (req.user.role !== 'ADMIN') throw new ForbiddenException();
     return this.service.setMainImage(imageId, productId);
   }
+
+  // ── New admin routes ──
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  create(@Request() req: any, @Body() body: any) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+    return this.service.create(body);
+  }
+
+  @Put('brands/:id')
+  @UseGuards(JwtAuthGuard)
+  updateBrand(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+    return this.service.updateBrand(+id, body);
+  }
+
+  @Delete('brands/:id')
+  @UseGuards(JwtAuthGuard)
+  removeBrand(@Request() req: any, @Param('id') id: string) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+    return this.service.removeBrand(+id);
+  }
+
+  @Post('brands')
+  @UseGuards(JwtAuthGuard)
+  createBrand(@Request() req: any, @Body() body: any) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+    return this.service.createBrand(body);
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  update(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+    return this.service.update(+id, body);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  remove(@Request() req: any, @Param('id') id: string) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+    return this.service.remove(+id);
+  }
+
+  @Get(':slug')
+  findOne(@Param('slug') slug: string) { return this.service.findOne(slug); }
 }

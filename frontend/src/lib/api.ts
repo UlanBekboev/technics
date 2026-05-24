@@ -57,3 +57,78 @@ export const getAllOrders = () =>
 
 export const updateOrderStatus = (id: number, status: string) =>
   api.patch(`/orders/${id}/status`, { status }).then((r) => r.data);
+
+export const forgotPassword = (email: string) =>
+  api.post('/auth/forgot-password', { email }).then((r) => r.data);
+
+export const resetPassword = (email: string, code: string, password: string) =>
+  api.post('/auth/reset-password', { email, code, password }).then((r) => r.data);
+
+// Admin — products
+export const adminGetProducts = () =>
+  api.get('/products/admin/all').then((r) => r.data);
+
+export const adminCreateProduct = (data: Record<string, any>) =>
+  api.post('/products', data).then((r) => r.data);
+
+export const adminUpdateProduct = (id: number, data: Record<string, any>) =>
+  api.put(`/products/${id}`, data).then((r) => r.data);
+
+export const adminDeleteProduct = (id: number) =>
+  api.delete(`/products/${id}`).then((r) => r.data);
+
+// Admin — brands
+export const adminCreateBrand = (data: Record<string, any>) =>
+  api.post('/products/brands', data).then((r) => r.data);
+
+export const adminUpdateBrand = (id: number, data: Record<string, any>) =>
+  api.put(`/products/brands/${id}`, data).then((r) => r.data);
+
+export const adminDeleteBrand = (id: number) =>
+  api.delete(`/products/brands/${id}`).then((r) => r.data);
+
+// Admin — categories
+export const getCategoriesFlat = () =>
+  api.get('/categories/all/flat').then((r) => r.data);
+
+export const adminCreateCategory = (data: Record<string, any>) =>
+  api.post('/categories', data).then((r) => r.data);
+
+export const adminUpdateCategory = (id: number, data: Record<string, any>) =>
+  api.put(`/categories/${id}`, data).then((r) => r.data);
+
+export const adminDeleteCategory = (id: number) =>
+  api.delete(`/categories/${id}`).then((r) => r.data);
+
+// Profile
+export const updateProfile = (data: { name?: string; phone?: string }) =>
+  api.patch('/auth/profile', data).then((r) => r.data);
+
+export const changePassword = (oldPassword: string, newPassword: string) =>
+  api.patch('/auth/password', { oldPassword, newPassword }).then((r) => r.data);
+
+// Reviews
+export const createReview = (data: { productId: number; rating: number; comment?: string }) =>
+  api.post('/reviews', data).then((r) => r.data);
+
+export const deleteReview = (id: number) =>
+  api.delete(`/reviews/${id}`).then((r) => r.data);
+
+// Favorites
+export const getFavorites = () =>
+  api.get('/favorites').then((r) => r.data);
+
+export const getFavoriteIds = () =>
+  api.get('/favorites/ids').then((r) => r.data as number[]);
+
+export const toggleFavorite = (productId: number) =>
+  api.post(`/favorites/${productId}`).then((r) => r.data as { added: boolean });
+
+// Upload image via Cloudinary
+export const uploadImage = (file: File) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post('/upload', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((r) => r.data as { url: string; publicId: string });
+};
