@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private upload: UploadService,
+  ) {}
 
   async findAll(query: {
     categorySlug?: string;
@@ -80,5 +84,66 @@ export class ProductsService {
 
   findBrands() {
     return this.prisma.brand.findMany({ orderBy: { name: 'asc' } });
+  }
+
+  // ── Admin CRUD ──────────────────────────────────────────────
+
+  findAllAdmin(search?: string) {
+    return this.prisma.product.findMany({
+      where: search ? { name: { contains: search, mode: 'insensitive' } } : undefined,
+      include: { images: true, category: true, brand: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  }
+
+  async createProduct(dto: {
+    name: string; slug: string; description?: string;
+    price: number; oldPrice?: number; stock?: number;
+    categoryId: number; brandId?: number; isActive?: boolean;
+  }) {
+    return this.prisma.product.create({ data: dto, include: { images: true, category: true, brand: true } });
+  }
+
+  async updateProduct(id: number, dto: Partial<{
+    name: string; slug: string; description: string;
+    price: number; oldPrice: number; stock: number;
+    categoryId: number; brandId: number; isActive: boolean;
+  }>) {
+    return this.prisma.product.update({
+      where: { id },
+      data: dto,
+      include: { images: true, category: true, brand: true },
+    });
+  }
+
+  async deleteProduct(id: number) {
+    // delete images from Cloudinary first
+    const product = await this.prisma.product.findUnique({ where: { id }, include: { images: true } });
+    if (product) {
+      for (const img of product.images) {
+        await this.upload.deleteImage(img.url).catch(() => {});
+      }
+    }
+    return this.prisma.product.delete({ where: { id } });
+  }
+
+  async addImage(productId: number, file: Express.Multer.File, isMain = false) {
+    const url = await this.upload.uploadImage(file, 'technics/products');
+    if (isMain) {
+      await this.prisma.productImage.updateMany({ where: { productId }, data: { isMain: false } });
+    }
+    return this.prisma.productImage.create({ data: { url, isMain, productId } });
+  }
+
+  async deleteImage(imageId: number) {
+    const img = await this.prisma.productImage.findUnique({ where: { id: imageId } });
+    if (img) await this.upload.deleteImage(img.url).catch(() => {});
+    return this.prisma.productImage.delete({ where: { id: imageId } });
+  }
+
+  async setMainImage(imageId: number, productId: number) {
+    await this.prisma.productImage.updateMany({ where: { productId }, data: { isMain: false } });
+    return this.prisma.productImage.update({ where: { id: imageId }, data: { isMain: true } });
   }
 }

@@ -132,7 +132,10 @@ export default function Header() {
                 <>
                   <Link href="/orders" className="hover:text-amber-300 transition-colors">{user.name}</Link>
                   {user.role === 'ADMIN' && (
-                    <Link href="/admin/orders" className="hover:text-amber-300 transition-colors">Админ</Link>
+                    <>
+                      <Link href="/admin/orders" className="hover:text-amber-300 transition-colors">Заказы</Link>
+                      <Link href="/admin/products" className="hover:text-amber-300 transition-colors">Товары</Link>
+                    </>
                   )}
                   <button onClick={logout} className="hover:text-red-300 transition-colors">Выйти</button>
                 </>
