@@ -11,7 +11,7 @@ import {
   getBrands,
   uploadImage,
 } from '@/lib/api';
-import { Pencil, Trash2, Plus, X, Upload, Loader2, RefreshCw, Eye } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Upload, Loader2, RefreshCw } from 'lucide-react';
 
 type Category = { id: number; name: string; slug: string };
 type Brand = { id: number; name: string; slug: string };
@@ -228,63 +228,62 @@ export default function AdminProductsPage() {
           className="w-full mb-4 px-4 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-blue-400"
         />
 
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+          <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Фото</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Название</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Категория</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Товар</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Категория</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Цена</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Склад</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Статус</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Склад</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Статус</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">Нет товаров</td>
+                  <td colSpan={6} className="text-center py-12 text-gray-400">Нет товаров</td>
                 </tr>
               ) : filtered.map((p) => {
                 const mainImg = p.images.find((i) => i.isMain) ?? p.images[0];
                 return (
                   <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                    {/* Фото + название — кликабельны */}
                     <td className="px-4 py-3">
-                      {mainImg ? (
-                        <img src={mainImg.url} alt="" className="w-12 h-12 object-cover rounded-lg border border-gray-100" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs">нет</div>
-                      )}
+                      <a
+                        href={`/product/${p.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 group"
+                        title="Открыть страницу товара"
+                      >
+                        {mainImg ? (
+                          <img src={mainImg.url} alt="" className="w-12 h-12 object-cover rounded-lg border border-gray-100 flex-shrink-0 group-hover:border-blue-300 transition-colors" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs flex-shrink-0">нет</div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">{p.name}</div>
+                          <div className="text-xs text-gray-400 truncate">{p.slug}</div>
+                        </div>
+                      </a>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 line-clamp-1">{p.name}</div>
-                      <div className="text-xs text-gray-400">{p.slug}</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{p.category?.name}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900">
+                    <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{p.category?.name}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
                       {Number(p.price).toLocaleString('ru')} сом
                       {p.oldPrice && (
                         <div className="text-xs text-gray-400 line-through">{Number(p.oldPrice).toLocaleString('ru')}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{p.stock} шт</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{p.stock} шт</td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {p.isActive ? 'Активен' : 'Скрыт'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 justify-end">
-                        <a
-                          href={`/product/${p.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
-                          title="Просмотр как покупатель"
-                        >
-                          <Eye size={15} />
-                        </a>
                         <button
                           onClick={() => openEdit(p)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
