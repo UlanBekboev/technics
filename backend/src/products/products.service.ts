@@ -102,8 +102,8 @@ export class ProductsService {
     return this.prisma.product.create({
       data: {
         ...rest,
-        images: images?.length ? { create: images } : undefined,
-        specs:  specs?.length  ? { create: specs }  : undefined,
+        images: images?.length ? { create: images.map(({ url, isMain }) => ({ url, isMain: isMain ?? false })) } : undefined,
+        specs:  specs?.length  ? { create: specs.map(({ key, value }) => ({ key, value })) }  : undefined,
       },
       include: { images: true, category: true, brand: true, specs: true },
     });
@@ -124,8 +124,8 @@ export class ProductsService {
       where: { id },
       data: {
         ...rest,
-        images: images?.length ? { create: images } : undefined,
-        specs:  specs?.length  ? { create: specs }  : undefined,
+        images: images?.length ? { create: images.map(({ url, isMain }) => ({ url, isMain: isMain ?? false })) } : undefined,
+        specs:  specs?.length  ? { create: specs.map(({ key, value }) => ({ key, value })) }  : undefined,
       },
       include: { images: true, category: true, brand: true, specs: true },
     });
