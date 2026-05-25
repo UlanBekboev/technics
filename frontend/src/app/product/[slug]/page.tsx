@@ -235,7 +235,7 @@ export default function ProductPage() {
             </div>
 
             {/* ── Right: Info ── */}
-            <div className="flex flex-col">
+            <div className="flex flex-col pr-6">
               {/* Brand */}
               {product.brand && (
                 <span className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#0057B8' }}>
@@ -264,7 +264,7 @@ export default function ProductPage() {
                 </span>
               </div>
 
-              <div className="border-t border-gray-100 pt-4 pr-[5px]">
+              <div className="border-t border-gray-100 pt-4">
                 {/* Stock + Price */}
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                   <span className={`flex items-center gap-1.5 text-sm font-medium shrink-0 ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
