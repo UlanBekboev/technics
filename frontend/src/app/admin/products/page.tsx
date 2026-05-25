@@ -11,7 +11,7 @@ import {
   getBrands,
   uploadImage,
 } from '@/lib/api';
-import { Pencil, Trash2, Plus, X, Upload, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Upload, Loader2, RefreshCw } from 'lucide-react';
 
 type Category = { id: number; name: string; slug: string };
 type Brand = { id: number; name: string; slug: string };
@@ -67,6 +67,7 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [slugLocked, setSlugLocked] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -91,6 +92,7 @@ export default function AdminProductsPage() {
   function openCreate() {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setSlugLocked(false);
     setShowForm(true);
   }
 
@@ -108,6 +110,7 @@ export default function AdminProductsPage() {
       brandId: p.brandId ? String(p.brandId) : '',
       images: p.images,
     });
+    setSlugLocked(true);
     setShowForm(true);
   }
 
@@ -316,16 +319,31 @@ export default function AdminProductsPage() {
                   <input
                     required
                     value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, slug: slugify(e.target.value) }))}
+                    onChange={(e) => setForm((f) => ({
+                      ...f,
+                      name: e.target.value,
+                      slug: slugLocked ? f.slug : slugify(e.target.value),
+                    }))}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">Slug *</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Slug *</label>
+                    {slugLocked && (
+                      <button
+                        type="button"
+                        onClick={() => { setSlugLocked(false); setForm((f) => ({ ...f, slug: slugify(f.name) })); }}
+                        className="flex items-center gap-1 text-[11px] text-blue-500 hover:text-blue-700 transition-colors"
+                      >
+                        <RefreshCw size={11} /> Сгенерировать из названия
+                      </button>
+                    )}
+                  </div>
                   <input
                     required
                     value={form.slug}
-                    onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                    onChange={(e) => { setSlugLocked(true); setForm((f) => ({ ...f, slug: e.target.value })); }}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 font-mono"
                   />
                 </div>
