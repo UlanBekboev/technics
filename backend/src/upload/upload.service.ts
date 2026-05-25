@@ -6,18 +6,11 @@ export class UploadService {
   private readonly logger = new Logger(UploadService.name);
 
   private getCloudinary() {
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey    = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-    this.logger.log(`Cloudinary config: cloud=${cloudName ?? 'MISSING'}, key=${apiKey ? apiKey.slice(0, 4) + '...' : 'MISSING'}`);
-
-    if (!cloudName || !apiKey || !apiSecret) {
-      throw new InternalServerErrorException(
-        `Cloudinary не настроен: cloud=${cloudName ?? 'MISSING'}, key=${apiKey ? 'OK' : 'MISSING'}, secret=${apiSecret ? 'OK' : 'MISSING'}`,
-      );
-    }
-    cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'ddoloafbp',
+      api_key:    process.env.CLOUDINARY_API_KEY    || '811795714155685',
+      api_secret: process.env.CLOUDINARY_API_SECRET || 'rOzh4bUMFi3BAySzqSytFeG6ucs',
+    });
     return cloudinary;
   }
 
