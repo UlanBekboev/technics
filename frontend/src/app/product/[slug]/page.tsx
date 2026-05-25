@@ -266,20 +266,20 @@ export default function ProductPage() {
 
               <div className="border-t border-gray-100 pt-4">
                 {/* Stock + Price */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className={`flex items-center gap-1.5 text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+                  <span className={`flex items-center gap-1.5 text-sm font-medium shrink-0 ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
                     {product.stock > 0 ? (
                       <><Check size={15} className="bg-green-500 text-white rounded-full p-0.5" /> В наличии</>
                     ) : (
                       'Нет в наличии'
                     )}
                   </span>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold" style={{ color: '#E53E3E' }}>
+                  <div className="text-right shrink-0">
+                    <div className="text-2xl sm:text-3xl font-bold leading-tight" style={{ color: '#E53E3E' }}>
                       {Number(product.price).toLocaleString()} сом
                     </div>
                     {product.oldPrice && (
-                      <div className="text-sm text-gray-400 line-through text-right">
+                      <div className="text-sm text-gray-400 line-through">
                         {Number(product.oldPrice).toLocaleString()} сом
                       </div>
                     )}
