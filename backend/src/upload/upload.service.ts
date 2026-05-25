@@ -24,11 +24,17 @@ export class UploadService {
     if (!this.configured) {
       throw new InternalServerErrorException('Cloudinary не настроен. Добавьте переменные окружения.');
     }
+    if (!file?.buffer?.length) {
+      throw new InternalServerErrorException('Файл пустой или не получен');
+    }
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: 'image', quality: 'auto', fetch_format: 'auto' },
+        { folder, resource_type: 'image' },
         (error, result) => {
-          if (error) return reject(error);
+          if (error) {
+            this.logger.error(`Cloudinary upload error: ${JSON.stringify(error)}`);
+            return reject(new InternalServerErrorException(`Cloudinary: ${error.message}`));
+          }
           resolve(result!.secure_url);
         },
       );
