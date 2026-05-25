@@ -274,7 +274,7 @@ export default function ProductPage() {
                       'Нет в наличии'
                     )}
                   </span>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 mr-[5px]">
                     <div className="text-2xl sm:text-3xl font-bold leading-tight" style={{ color: '#E53E3E' }}>
                       {Number(product.price).toLocaleString()} сом
                     </div>
