@@ -11,7 +11,7 @@ import {
   getBrands,
   uploadImage,
 } from '@/lib/api';
-import { Pencil, Trash2, Plus, X, Upload, Loader2, RefreshCw } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Upload, Loader2, RefreshCw, Eye } from 'lucide-react';
 
 type Category = { id: number; name: string; slug: string };
 type Brand = { id: number; name: string; slug: string };
@@ -276,9 +276,19 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 justify-end">
+                        <a
+                          href={`/product/${p.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
+                          title="Просмотр как покупатель"
+                        >
+                          <Eye size={15} />
+                        </a>
                         <button
                           onClick={() => openEdit(p)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Редактировать"
                         >
                           <Pencil size={15} />
                         </button>
@@ -286,6 +296,7 @@ export default function AdminProductsPage() {
                           onClick={() => handleDelete(p.id)}
                           disabled={deleting === p.id}
                           className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                          title="Удалить"
                         >
                           {deleting === p.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                         </button>
