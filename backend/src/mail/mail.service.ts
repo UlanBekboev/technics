@@ -9,13 +9,17 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor(private config: ConfigService) {
-    const apiKey = this.config.get<string>('RESEND_API_KEY');
+    // Read directly from process.env (Railway sometimes wraps values in quotes)
+    const raw = process.env.RESEND_API_KEY || this.config.get<string>('RESEND_API_KEY') || '';
+    const apiKey = raw.replace(/^["']|["']$/g, '').trim();
     if (apiKey) {
       this.resend = new Resend(apiKey);
+      this.logger.log('Resend email service enabled');
     } else {
       this.logger.warn('RESEND_API_KEY not set — email sending is disabled');
     }
-    this.from = this.config.get<string>('MAIL_FROM') || 'Technics <noreply@technics.store>';
+    const fromRaw = process.env.MAIL_FROM || this.config.get<string>('MAIL_FROM') || '';
+    this.from = fromRaw.replace(/^["']|["']$/g, '').trim() || 'Technics <onboarding@resend.dev>';
   }
 
   private get isEnabled(): boolean {
