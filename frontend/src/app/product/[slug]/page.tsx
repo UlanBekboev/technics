@@ -264,7 +264,7 @@ export default function ProductPage() {
                 </span>
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
+              <div className="border-t border-gray-100 pt-4 pr-[5px]">
                 {/* Stock + Price */}
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                   <span className={`flex items-center gap-1.5 text-sm font-medium shrink-0 ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
@@ -274,7 +274,7 @@ export default function ProductPage() {
                       'Нет в наличии'
                     )}
                   </span>
-                  <div className="text-right shrink-0 mr-[5px]">
+                  <div className="text-right shrink-0">
                     <div className="text-2xl sm:text-3xl font-bold leading-tight" style={{ color: '#E53E3E' }}>
                       {Number(product.price).toLocaleString()} сом
                     </div>
