@@ -1,17 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
 export class UploadService {
+  private readonly logger = new Logger(UploadService.name);
+  private readonly configured: boolean;
+
   constructor() {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key:    process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey    = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      this.logger.error('Cloudinary env vars not set (CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET)');
+      this.configured = false;
+    } else {
+      cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+      this.configured = true;
+    }
   }
 
   async uploadImage(file: Express.Multer.File, folder = 'technics'): Promise<string> {
+    if (!this.configured) {
+      throw new InternalServerErrorException('Cloudinary не настроен. Добавьте переменные окружения.');
+    }
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder, resource_type: 'image', quality: 'auto', fetch_format: 'auto' },
