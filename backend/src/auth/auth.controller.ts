@@ -1,10 +1,25 @@
 import { Controller, Post, Patch, Body, Get, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { MailService } from '../mail/mail.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private mail: MailService,
+  ) {}
+
+  @Get('mail-debug')
+  mailDebug() {
+    const key = process.env.RESEND_API_KEY || '';
+    const clean = key.replace(/^["']|["']$/g, '').trim();
+    return {
+      RESEND_API_KEY: clean ? `"${clean.slice(0, 6)}..." (length: ${clean.length})` : '❌ NOT SET',
+      MAIL_FROM: process.env.MAIL_FROM || '(not set, will use default)',
+      mail_enabled: clean.length > 0,
+    };
+  }
 
   @Post('register')
   register(@Body() body: { email: string; password: string; name: string; phone?: string }) {
