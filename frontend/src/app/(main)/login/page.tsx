@@ -26,7 +26,7 @@ function LoginForm() {
       localStorage.setItem('token', access_token);
       const user = await getMe();
       setAuth(user, access_token);
-      router.push(redirect);
+      router.push(user.role === 'ADMIN' ? '/admin/orders' : redirect);
     } catch (err: any) {
       const msg = err.response?.data?.message ?? '';
       setError(msg || 'Ошибка входа. Попробуйте ещё раз.');
