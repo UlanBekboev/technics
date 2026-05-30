@@ -32,10 +32,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm"
-              style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
+            <Link href="/" className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm hover:opacity-80 transition-opacity"
+              style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }} title="На главную">
               T
-            </div>
+            </Link>
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
               <LayoutDashboard size={14} />
               Панель управления
