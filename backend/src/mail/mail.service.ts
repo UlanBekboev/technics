@@ -146,8 +146,9 @@ export class MailService {
     });
 
     if (error) {
-      this.logger.error(`Failed to send reset code to ${to}: ${JSON.stringify(error)}`);
-      throw new Error('Не удалось отправить письмо');
+      const msg = (error as any)?.message || JSON.stringify(error);
+      this.logger.error(`Failed to send reset code to ${to}: ${msg}`);
+      throw new Error(`Resend error: ${msg}`);
     }
   }
 }
