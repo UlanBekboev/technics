@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  Menu, ChevronRight, Video, Camera, Zap, Settings, Shield, Phone, Lock,
+  ChevronRight, Video, Camera, Zap, Settings, Shield, Phone, Lock,
   Wifi, HardDrive, Laptop, Monitor, Cpu, Mouse, Printer, ShoppingBag,
   Tv, Home, Utensils, Sparkles, Package, type LucideIcon,
 } from 'lucide-react';
@@ -34,8 +34,7 @@ const ICONS: Record<string, LucideIcon> = {
   'aksessuary':         Package,
 };
 
-const BG      = '#0057B8';
-const BG_HEAD = '#003d8f';
+const BG = '#0057B8';
 
 export default function CatalogSidebar() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -66,14 +65,6 @@ export default function CatalogSidebar() {
       style={{ background: BG }}
       onMouseLeave={scheduleClose}
     >
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3.5 select-none flex-shrink-0"
-        style={{ background: BG_HEAD }}
-      >
-        <span className="font-semibold text-white text-sm tracking-wide">Каталог товаров</span>
-        <Menu size={17} className="text-white/60" />
-      </div>
 
       {/* Categories — scrollable, fills remaining height */}
       <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
