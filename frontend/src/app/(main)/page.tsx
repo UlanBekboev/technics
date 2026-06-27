@@ -1,9 +1,13 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Zap, Shield, Truck, Headphones } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, Zap, Shield, Truck, Headphones,
+  Video, Camera, Laptop, Monitor, Cpu, Mouse, Printer,
+  Wifi, HardDrive, ShoppingBag, Tv, Home, Phone, Lock,
+} from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
-import CatalogSidebar from '@/components/CatalogSidebar';
+import RecentlyViewed from '@/components/RecentlyViewed';
 import { getFeatured, getProducts } from '@/lib/api';
 
 const BANNERS = [
@@ -11,206 +15,205 @@ const BANNERS = [
     title: 'Видеонаблюдение',
     subtitle: 'Hikvision · Dahua · EMIN',
     desc: 'Камеры, регистраторы и готовые комплекты для любых объектов',
-    bg: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1a2f5e 100%)',
-    overlay: 'linear-gradient(105deg, rgba(5,5,30,0.72) 0%, rgba(20,40,90,0.42) 45%, rgba(15,30,70,0.10) 100%)',
-    accent: '#0057B8',
     href: '/catalog?category=videokamery',
     img: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400&q=80',
+    color: '#0057B8',
   },
   {
     title: 'Ноутбуки и ПК',
     subtitle: 'ASUS · Lenovo · HP · Dell',
     desc: 'Лучшие цены на технику в Бишкеке. Гарантия производителя.',
-    bg: 'linear-gradient(135deg, #1a0a2e 0%, #2d1b69 50%, #0057B8 100%)',
-    overlay: 'linear-gradient(105deg, rgba(10,5,35,0.70) 0%, rgba(40,25,100,0.40) 45%, rgba(30,20,80,0.10) 100%)',
-    accent: '#1a7fff',
     href: '/catalog?category=noutbuki-monobloki',
     img: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=1400&q=80',
+    color: '#7C3AED',
   },
   {
     title: 'Сигнализация и охрана',
     subtitle: 'Умный дом · GSM · Датчики',
-    desc: 'Полный спектр охранных систем и оборудования для безопасности',
-    bg: 'linear-gradient(135deg, #0a1628 0%, #162040 50%, #1a2a50 100%)',
-    overlay: 'linear-gradient(105deg, rgba(5,10,25,0.72) 0%, rgba(15,30,70,0.42) 45%, rgba(10,25,60,0.10) 100%)',
-    accent: '#0066cc',
+    desc: 'Полный спектр охранных систем и оборудования',
     href: '/catalog?category=signalizatsiya-i-po',
     img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=80',
+    color: '#0891B2',
   },
+];
+
+const CATS = [
+  { label: 'Видеорегистраторы', slug: 'videoregistratory',   icon: Video,     bg: '#0057B8' },
+  { label: 'Видеокамеры',       slug: 'videokamery',          icon: Camera,    bg: '#0891B2' },
+  { label: 'Ноутбуки',          slug: 'noutbuki-monobloki',   icon: Laptop,    bg: '#7C3AED' },
+  { label: 'Мониторы',          slug: 'monitory',             icon: Monitor,   bg: '#0D9488' },
+  { label: 'Компьютеры',        slug: 'kompyutery',           icon: Cpu,       bg: '#DC2626' },
+  { label: 'Аксессуары для ПК', slug: 'aksessuary-dlya-pk',   icon: Mouse,     bg: '#D97706' },
+  { label: 'Принтеры',          slug: 'printery-proektory',   icon: Printer,   bg: '#059669' },
+  { label: 'Сетевые устройства',slug: 'setevye-ustroystva',   icon: Wifi,      bg: '#2563EB' },
+  { label: 'Носители информ.',  slug: 'nositeli-informatsii', icon: HardDrive, bg: '#7C3AED' },
+  { label: 'Домофония',         slug: 'domofoniya',           icon: Phone,     bg: '#0891B2' },
+  { label: 'Контроль доступа',  slug: 'kontrol-dostupa',      icon: Lock,      bg: '#DC2626' },
+  { label: 'Торговое обор.',    slug: 'torgovoe-oborudovanie',icon: ShoppingBag,bg:'#D97706' },
+  { label: 'Телевизоры',        slug: 'televizory-i-audio',   icon: Tv,        bg: '#059669' },
+  { label: 'Техника для дома',  slug: 'tekhnika-dlya-doma',   icon: Home,      bg: '#0057B8' },
+  { label: 'Сигнализация',      slug: 'signalizatsiya-i-po',  icon: Shield,    bg: '#0D9488' },
+  { label: 'Кабель',            slug: 'kabel',                icon: Zap,       bg: '#7C3AED' },
 ];
 
 const ADVANTAGES = [
   { icon: Truck,      title: 'Быстрая доставка', desc: 'По всему Бишкеку за 1–2 дня' },
-  { icon: Shield,     title: 'Гарантия',          desc: 'Официальная на все товары' },
-  { icon: Zap,        title: 'Лучшие цены',       desc: 'Честные цены без наценок' },
-  { icon: Headphones, title: 'Поддержка 24/7',    desc: 'Всегда на связи в WhatsApp' },
+  { icon: Shield,     title: 'Официальная гарантия', desc: 'На всё оборудование' },
+  { icon: Zap,        title: 'Лучшие цены',      desc: 'Честные цены без наценок' },
+  { icon: Headphones, title: 'Поддержка 24/7',   desc: 'Всегда на связи в WhatsApp' },
 ];
 
 export default function HomePage() {
-  const [popular, setPopular] = useState<any[]>([]);
+  const [popular, setPopular]   = useState<any[]>([]);
   const [newItems, setNewItems] = useState<any[]>([]);
-  const [slide, setSlide] = useState(0);
+  const [slide, setSlide]       = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const slideTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     getFeatured().then(setPopular).catch(() => {});
     getProducts({ page: 1 }).then((r: any) => setNewItems(r.items ?? [])).catch(() => {});
-    const timer = setInterval(() => setSlide((s) => (s + 1) % BANNERS.length), 3000);
-    return () => clearInterval(timer);
   }, []);
 
-  // Auto-advance popular carousel every 3 seconds
+  // Auto-advance banner
   useEffect(() => {
-    if (popular.length === 0) return;
-    const timer = setInterval(() => {
-      const el = carouselRef.current;
-      if (!el) return;
-      const maxScroll = el.scrollWidth - el.clientWidth;
-      if (el.scrollLeft >= maxScroll - 10) {
-        el.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        el.scrollBy({ left: 220, behavior: 'smooth' });
-      }
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [popular]);
+    slideTimer.current = setInterval(() => setSlide(s => (s + 1) % BANNERS.length), 4500);
+    return () => { if (slideTimer.current) clearInterval(slideTimer.current); };
+  }, []);
+
+  const goSlide = (i: number) => {
+    setSlide(i);
+    if (slideTimer.current) clearInterval(slideTimer.current);
+    slideTimer.current = setInterval(() => setSlide(s => (s + 1) % BANNERS.length), 4500);
+  };
 
   const scrollCarousel = (dir: 'prev' | 'next') => {
-    carouselRef.current?.scrollBy({ left: dir === 'next' ? 260 : -260, behavior: 'smooth' });
+    const el = carouselRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === 'next' ? 220 : -220, behavior: 'smooth' });
   };
 
   const banner = BANNERS[slide];
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Hero: sidebar + banner */}
-      <section className="max-w-7xl mx-auto px-4 pt-4 pb-3">
-        <div className="flex gap-0 items-stretch min-h-[220px] md:min-h-[295px]">
-          <div className="hidden md:block">
-            <CatalogSidebar />
-          </div>
 
-          {/* Banner slider */}
+      {/* ── Hero Banner ── */}
+      <section className="relative w-full overflow-hidden" style={{ height: 'clamp(260px, 42vw, 480px)' }}>
+        {BANNERS.map((b, i) => (
           <div
-            className="flex-1 relative overflow-hidden"
-            style={{ background: banner.bg }}
+            key={i}
+            className="absolute inset-0 transition-opacity duration-700"
+            style={{ opacity: i === slide ? 1 : 0, pointerEvents: i === slide ? 'auto' : 'none' }}
           >
-            {/* Real background image */}
-            <img
-              key={banner.img}
-              src={banner.img}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ opacity: 0.88 }}
-            />
-            {/* Gradient overlay — keeps text readable */}
-            <div className="absolute inset-0" style={{ background: banner.overlay }} />
-            {/* Decorative accent circle */}
-            <div className="absolute -right-10 top-0 w-64 h-64 rounded-full opacity-[0.07]" style={{ background: banner.accent }} />
-
-            <div className="relative z-10 flex flex-col justify-center h-full px-12 py-10">
-              <span
-                className="inline-block text-xs font-semibold px-3 py-1.5 rounded mb-4 w-fit text-white tracking-wider uppercase"
-                style={{ background: banner.accent }}
-              >
-                {banner.subtitle}
-              </span>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 leading-tight">
-                {banner.title}
-              </h1>
-              <p className="text-blue-200/80 text-sm mb-8 max-w-md leading-relaxed">
-                {banner.desc}
-              </p>
-              <Link
-                href={banner.href}
-                className="inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-lg transition-all w-fit hover:opacity-90 hover:gap-3 text-sm"
-                style={{ background: banner.accent }}
-              >
-                Смотреть товары <ChevronRight size={16} />
-              </Link>
-            </div>
-
-            <button
-              onClick={() => setSlide((s) => (s - 1 + BANNERS.length) % BANNERS.length)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => setSlide((s) => (s + 1) % BANNERS.length)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
-
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {BANNERS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSlide(i)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${i === slide ? 'w-6 bg-white' : 'w-1.5 bg-white/35'}`}
-                />
-              ))}
-            </div>
+            <img src={b.img} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.3) 55%,transparent 100%)' }} />
           </div>
+        ))}
+
+        {/* Text overlay */}
+        <div className="relative z-10 h-full flex flex-col justify-center px-8 md:px-16 max-w-3xl">
+          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-4 w-fit text-white uppercase tracking-widest"
+            style={{ background: banner.color }}>
+            {banner.subtitle}
+          </span>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3 leading-tight drop-shadow-lg">
+            {banner.title}
+          </h1>
+          <p className="text-white/70 text-sm md:text-base mb-7 max-w-sm leading-relaxed">
+            {banner.desc}
+          </p>
+          <Link href={banner.href}
+            className="inline-flex items-center gap-2 text-white font-bold px-7 py-3 rounded-full text-sm transition-all hover:opacity-90 hover:gap-3 w-fit shadow-lg"
+            style={{ background: banner.color }}>
+            Смотреть товары <ChevronRight size={16} />
+          </Link>
+        </div>
+
+        {/* Arrows */}
+        <button onClick={() => goSlide((slide - 1 + BANNERS.length) % BANNERS.length)}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
+          <ChevronLeft size={20} />
+        </button>
+        <button onClick={() => goSlide((slide + 1) % BANNERS.length)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
+          <ChevronRight size={20} />
+        </button>
+
+        {/* Dots */}
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+          {BANNERS.map((_, i) => (
+            <button key={i} onClick={() => goSlide(i)}
+              className={`rounded-full transition-all duration-300 ${i === slide ? 'w-7 h-2 bg-white' : 'w-2 h-2 bg-white/40 hover:bg-white/70'}`} />
+          ))}
         </div>
       </section>
 
-      {/* Advantages bar */}
-      <section className="bg-white border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-3 grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
-          {ADVANTAGES.map((adv) => (
-            <div key={adv.title} className="flex items-center gap-3 px-5 py-2">
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #003d8f, #0077e6)' }}
-              >
+      {/* ── Advantages ── */}
+      <section className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-gray-100">
+          {ADVANTAGES.map(adv => (
+            <div key={adv.title} className="flex items-center gap-3 px-5 py-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
                 <adv.icon size={17} className="text-white" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-800">{adv.title}</p>
-                <p className="text-xs text-gray-400">{adv.desc}</p>
+                <p className="text-xs font-bold text-gray-800">{adv.title}</p>
+                <p className="text-[11px] text-gray-400">{adv.desc}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Популярное сейчас — carousel */}
+      {/* ── Category Grid ── */}
+      <section className="max-w-7xl mx-auto px-4 pt-8 pb-4">
+        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2.5">
+          <span className="w-1 h-5 rounded-full inline-block" style={{ background: 'linear-gradient(to bottom,#003d8f,#0077e6)' }} />
+          Категории товаров
+        </h2>
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+          {CATS.map(cat => {
+            const Icon = cat.icon;
+            return (
+              <Link key={cat.slug} href={`/catalog?category=${cat.slug}`}
+                className="group flex flex-col items-center gap-2 p-3 bg-white rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 duration-200"
+                  style={{ background: cat.bg + '18' }}>
+                  <Icon size={22} style={{ color: cat.bg }} />
+                </div>
+                <span className="text-[10px] font-medium text-gray-600 text-center leading-tight group-hover:text-blue-700 transition-colors">
+                  {cat.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Popular now ── */}
       {popular.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-7">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
-              <span
-                className="w-1 h-5 rounded-full inline-block"
-                style={{ background: 'linear-gradient(to bottom, #003d8f, #0077e6)' }}
-              />
+              <span className="w-1 h-5 rounded-full inline-block" style={{ background: 'linear-gradient(to bottom,#003d8f,#0077e6)' }} />
               Популярное сейчас
             </h2>
             <div className="flex gap-2">
-              <button
-                onClick={() => scrollCarousel('prev')}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all text-white shadow hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #003d8f, #0077e6)' }}
-              >
+              <button onClick={() => scrollCarousel('prev')}
+                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
                 <ChevronLeft size={18} />
               </button>
-              <button
-                onClick={() => scrollCarousel('next')}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all text-white shadow hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #003d8f, #0077e6)' }}
-              >
+              <button onClick={() => scrollCarousel('next')}
+                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
                 <ChevronRight size={18} />
               </button>
             </div>
           </div>
-          <div
-            ref={carouselRef}
-            className="flex gap-3 overflow-x-auto pb-2"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {popular.map((p) => (
-              <div key={p.id} className="w-[200px] flex-shrink-0">
+          <div ref={carouselRef} className="flex gap-3 overflow-x-auto pb-2 snap-x" style={{ scrollbarWidth: 'none' }}>
+            {popular.map(p => (
+              <div key={p.id} className="w-[200px] flex-shrink-0 snap-start">
                 <ProductCard product={p} />
               </div>
             ))}
@@ -218,28 +221,20 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Новинки — grid */}
+      {/* ── New items ── */}
       <section className="max-w-7xl mx-auto px-4 pb-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
-            <span
-              className="w-1 h-5 rounded-full inline-block"
-              style={{ background: 'linear-gradient(to bottom, #003d8f, #0077e6)' }}
-            />
+            <span className="w-1 h-5 rounded-full inline-block" style={{ background: 'linear-gradient(to bottom,#003d8f,#0077e6)' }} />
             Новинки
           </h2>
-          <Link
-            href="/catalog"
-            className="text-sm font-medium flex items-center gap-1 hover:opacity-80 transition-opacity"
-            style={{ color: '#0057B8' }}
-          >
+          <Link href="/catalog" className="text-sm font-medium flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: '#0057B8' }}>
             Все товары <ChevronRight size={14} />
           </Link>
         </div>
-
         {newItems.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {newItems.slice(0, 10).map((p) => <ProductCard key={p.id} product={p} />)}
+            {newItems.slice(0, 10).map(p => <ProductCard key={p.id} product={p} />)}
           </div>
         ) : (
           <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-xl bg-white">
@@ -247,6 +242,8 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      <RecentlyViewed />
     </div>
   );
 }
