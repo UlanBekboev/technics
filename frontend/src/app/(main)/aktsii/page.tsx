@@ -1,5 +1,31 @@
 'use client';
+import { useState } from 'react';
 import { Phone, CheckCircle, ShoppingCart, Tag, Wifi, Camera } from 'lucide-react';
+
+function CamPhoto({ src, model, label }: { src: string; model: string; label: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="flex flex-col items-center justify-center p-4 gap-1.5 h-full">
+      {!failed ? (
+        <img
+          src={src}
+          alt={model}
+          className="flex-1 w-full object-contain"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <div className="flex-1 w-full flex items-center justify-center rounded-xl"
+          style={{ background: 'linear-gradient(135deg,#e8f0fe,#dbeafe)' }}>
+          <Camera size={48} style={{ color: '#0057B8', opacity: 0.4 }} />
+        </div>
+      )}
+      <div className="text-center">
+        <p className="text-xs font-bold text-gray-700">{model}</p>
+        <p className="text-[10px] text-gray-400">{label}</p>
+      </div>
+    </div>
+  );
+}
 
 const TVT_PACKAGES = [
   { label: 'Комплект с HDD 500 ГБ', note: 'Запись до 5 дней',   price: 21900 },
@@ -96,39 +122,8 @@ export default function AktsiiPage() {
 
             {/* Фото камер TVT 9440 и 9540 */}
             <div className="grid grid-cols-2 divide-x divide-gray-200 bg-gray-50" style={{ height: 200 }}>
-              {[
-                {
-                  model: 'TVT TD-9440',
-                  label: '4МР · Купольная',
-                  src: 'https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9440.jpg',
-                  fallback: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80',
-                },
-                {
-                  model: 'TVT TD-9540',
-                  label: '5МР · Купольная',
-                  src: 'https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9540.jpg',
-                  fallback: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=400&q=80',
-                },
-              ].map(cam => (
-                <div key={cam.model} className="flex flex-col items-center justify-center p-4 gap-1.5">
-                  <img
-                    src={cam.src}
-                    alt={cam.model}
-                    className="flex-1 w-full object-contain"
-                    onError={e => {
-                      const el = e.target as HTMLImageElement;
-                      if (el.src !== cam.fallback) {
-                        el.src = cam.fallback;
-                        el.className = 'flex-1 w-full object-cover rounded-xl';
-                      }
-                    }}
-                  />
-                  <div className="text-center">
-                    <p className="text-xs font-bold text-gray-700">{cam.model}</p>
-                    <p className="text-[10px] text-gray-400">{cam.label}</p>
-                  </div>
-                </div>
-              ))}
+              <CamPhoto src="https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9440.jpg" model="TVT TD-9440" label="4МР · Купольная" />
+              <CamPhoto src="https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9540.jpg" model="TVT TD-9540" label="5МР · Купольная" />
             </div>
 
             <div className="p-6">
