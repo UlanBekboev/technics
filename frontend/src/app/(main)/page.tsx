@@ -147,6 +147,24 @@ export default function HomePage() {
       </section>
 
 
+      {/* ── Promo banner ── */}
+      <section className="max-w-7xl mx-auto px-4 pt-7">
+        <Link href="/aktsii"
+          className="flex items-center justify-between gap-4 rounded-2xl px-6 py-5 transition-opacity hover:opacity-95 group"
+          style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
+          <div>
+            <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-red-500 text-white px-2 py-0.5 rounded-full mb-2">
+              Акция
+            </span>
+            <p className="text-white font-bold text-lg leading-tight">Комбо-предложения с установкой</p>
+            <p className="text-white/70 text-sm mt-0.5">Wi-Fi камеры, видеонаблюдение под ключ — выгодные комплекты</p>
+          </div>
+          <div className="flex-shrink-0 flex items-center gap-2 bg-white/20 text-white text-sm font-bold px-4 py-2.5 rounded-xl group-hover:bg-white/30 transition-colors whitespace-nowrap">
+            Смотреть <ChevronRight size={16} />
+          </div>
+        </Link>
+      </section>
+
       {/* ── Popular now ── */}
       {popular.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-7">
