@@ -150,42 +150,6 @@ export default function Header() {
     <>
       <header className="bg-white sticky top-0 z-50 shadow-md">
 
-        {/* ── Верхняя полоска (только десктоп) ── */}
-        <div className="hidden md:block text-white text-xs" style={{ background: TOPBAR_BG }}>
-          <div className="max-w-7xl mx-auto px-4 h-9 flex items-center justify-between gap-4">
-            <div className="hidden md:flex items-center gap-4">
-              <a href="tel:+996704443333" className="flex items-center gap-1.5 hover:text-amber-300 transition-colors">
-                <Phone size={11} /> 0704 44 33 33
-              </a>
-              <span className="text-white/20">|</span>
-              <a href="tel:+996553413333" className="flex items-center gap-1.5 hover:text-amber-300 transition-colors">
-                <Phone size={11} /> 0553 41 33 33
-              </a>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="hidden lg:flex items-center gap-1 text-white/70">
-                <MapPin size={11} /> г. Бишкек
-              </span>
-              {user ? (
-                <>
-                  <Link href="/profile" className="hover:text-amber-300 transition-colors">{user.name}</Link>
-                  {user.role === 'ADMIN' && (
-                    <>
-                      <Link href="/admin/orders"   className="hover:text-amber-300 transition-colors">Заказы</Link>
-                      <Link href="/admin/products" className="hover:text-amber-300 transition-colors">Товары</Link>
-                    </>
-                  )}
-                  <button onClick={logout} className="hover:text-red-300 transition-colors">Выйти</button>
-                </>
-              ) : (
-                <>
-                  <Link href="/login"    className="hover:text-amber-300 transition-colors">Войти</Link>
-                  <Link href="/register" className="hover:text-amber-300 transition-colors hidden sm:block">Регистрация</Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* ── Главная строка ── */}
         <div className="max-w-7xl mx-auto px-3 phone:px-4 py-2 phone:py-3 flex items-center gap-2 phone:gap-3">
