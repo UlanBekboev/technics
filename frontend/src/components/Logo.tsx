@@ -23,10 +23,10 @@ export default function Logo({ size = 44, className }: { size?: number; classNam
       <line x1="30"  y1="36.5" x2="34"  y2="36.5" stroke="#7DD3FC" strokeWidth="1.5" opacity="0.65" />
 
       {/* Pin holes on sides */}
-      <rect x="0" y="16" width="3" height="4" rx="1" fill="#1D4ED8" />
-      <rect x="0" y="24" width="3" height="4" rx="1" fill="#1D4ED8" />
-      <rect x="41" y="16" width="3" height="4" rx="1" fill="#1D4ED8" />
-      <rect x="41" y="24" width="3" height="4" rx="1" fill="#1D4ED8" />
+      <rect x="0" y="16" width="3" height="4" rx="1" fill="#7DD3FC" opacity="0.85" />
+      <rect x="0" y="24" width="3" height="4" rx="1" fill="#7DD3FC" opacity="0.85" />
+      <rect x="41" y="16" width="3" height="4" rx="1" fill="#7DD3FC" opacity="0.85" />
+      <rect x="41" y="24" width="3" height="4" rx="1" fill="#7DD3FC" opacity="0.85" />
 
       {/* "T" letter */}
       <path d="M10 14H34V19.5H25.5V31H18.5V19.5H10Z" fill="white" />
