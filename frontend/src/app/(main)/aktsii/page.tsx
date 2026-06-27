@@ -94,18 +94,22 @@ export default function AktsiiPage() {
               </div>
             </div>
 
-            {/* Фото комплекта */}
-            <div className="bg-gray-50 flex items-center justify-center overflow-hidden" style={{ height: 220 }}>
-              <img
-                src="https://tvt.net/wp-content/uploads/2022/07/NVT-Kit-4CH-POE-NVR.png"
-                alt="TVT комплект видеонаблюдения"
-                className="h-full w-full object-contain p-4"
-                onError={e => {
-                  const el = e.target as HTMLImageElement;
-                  el.src = 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&q=80';
-                  el.className = 'h-full w-full object-cover';
-                }}
-              />
+            {/* Фото камер TVT 9440 и 9540 */}
+            <div className="grid grid-cols-2 divide-x divide-gray-100 bg-gray-50" style={{ height: 200 }}>
+              {[
+                { model: 'TVT 9440', src: 'https://tvt.net/wp-content/uploads/TD-9440E3-4MP.png' },
+                { model: 'TVT 9540', src: 'https://tvt.net/wp-content/uploads/TD-9540E3-5MP.png' },
+              ].map(cam => (
+                <div key={cam.model} className="flex flex-col items-center justify-center p-4 gap-2">
+                  <img
+                    src={cam.src}
+                    alt={cam.model}
+                    className="flex-1 w-full object-contain"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <span className="text-xs font-bold text-gray-500 tracking-wide">{cam.model}</span>
+                </div>
+              ))}
             </div>
 
             <div className="p-6">
