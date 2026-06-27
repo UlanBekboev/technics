@@ -46,6 +46,7 @@ export default function HomePage() {
   const [newItems, setNewItems] = useState<any[]>([]);
   const [slide, setSlide]       = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const hitsRef     = useRef<HTMLDivElement>(null);
   const slideTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -145,6 +146,36 @@ export default function HomePage() {
         </div>
       </section>
 
+
+      {/* ── Хиты продаж ── */}
+      {newItems.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-7">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Хиты продаж</h2>
+              <p className="text-sm text-gray-400 mt-0.5">Чаще всего покупают</p>
+            </div>
+            <Link href="/catalog" className="text-sm font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: '#E53E3E' }}>
+              Смотреть все <ChevronRight size={14} />
+            </Link>
+          </div>
+          <div className="relative">
+            <div ref={hitsRef} className="flex gap-4 overflow-x-auto pb-2 snap-x" style={{ scrollbarWidth: 'none' }}>
+              {newItems.slice(0, 8).map(p => (
+                <div key={p.id} className="w-[200px] flex-shrink-0 snap-start">
+                  <ProductCard product={p} />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => hitsRef.current?.scrollBy({ left: 220, behavior: 'smooth' })}
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-colors z-10"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* ── Popular now ── */}
       {popular.length > 0 && (
