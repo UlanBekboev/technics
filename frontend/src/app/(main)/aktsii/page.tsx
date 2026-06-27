@@ -95,19 +95,38 @@ export default function AktsiiPage() {
             </div>
 
             {/* Фото камер TVT 9440 и 9540 */}
-            <div className="grid grid-cols-2 divide-x divide-gray-100 bg-gray-50" style={{ height: 200 }}>
+            <div className="grid grid-cols-2 divide-x divide-gray-200 bg-gray-50" style={{ height: 200 }}>
               {[
-                { model: 'TVT 9440', src: 'https://tvt.net/wp-content/uploads/TD-9440E3-4MP.png' },
-                { model: 'TVT 9540', src: 'https://tvt.net/wp-content/uploads/TD-9540E3-5MP.png' },
+                {
+                  model: 'TVT TD-9440',
+                  label: '4МР · Купольная',
+                  src: 'https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9440.jpg',
+                  fallback: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80',
+                },
+                {
+                  model: 'TVT TD-9540',
+                  label: '5МР · Купольная',
+                  src: 'https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9540.jpg',
+                  fallback: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=400&q=80',
+                },
               ].map(cam => (
-                <div key={cam.model} className="flex flex-col items-center justify-center p-4 gap-2">
+                <div key={cam.model} className="flex flex-col items-center justify-center p-4 gap-1.5">
                   <img
                     src={cam.src}
                     alt={cam.model}
                     className="flex-1 w-full object-contain"
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    onError={e => {
+                      const el = e.target as HTMLImageElement;
+                      if (el.src !== cam.fallback) {
+                        el.src = cam.fallback;
+                        el.className = 'flex-1 w-full object-cover rounded-xl';
+                      }
+                    }}
                   />
-                  <span className="text-xs font-bold text-gray-500 tracking-wide">{cam.model}</span>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-gray-700">{cam.model}</p>
+                    <p className="text-[10px] text-gray-400">{cam.label}</p>
+                  </div>
                 </div>
               ))}
             </div>
