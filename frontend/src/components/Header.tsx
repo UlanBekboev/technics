@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import {
-  Search, ShoppingCart, User, Phone, MapPin, Menu, X,
+  Search, ShoppingCart, User, Phone, Menu, X,
   ChevronRight, ChevronDown, Heart,
   Video, Camera, Zap, Settings, Shield, Lock, Wifi, HardDrive,
   Laptop, Monitor, Cpu, Mouse, Printer, ShoppingBag, Tv, Home,
@@ -185,7 +185,7 @@ export default function Header() {
               <button
                 type="submit"
                 className="absolute right-0 top-0 h-full px-3 phone:px-5 rounded-r-xl flex items-center justify-center text-white font-semibold text-sm hover:opacity-90 transition-opacity gap-1.5"
-                style={{ background: '#E53E3E' }}
+                style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}
               >
                 {searching
                   ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
