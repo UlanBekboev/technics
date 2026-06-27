@@ -1,11 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import {
-  ChevronLeft, ChevronRight, Zap, Shield, Truck, Headphones,
-  Video, Camera, Laptop, Monitor, Cpu, Mouse, Printer,
-  Wifi, HardDrive, ShoppingBag, Tv, Home, Phone, Lock,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Zap, Shield, Truck, Headphones } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import { getFeatured, getProducts } from '@/lib/api';
@@ -37,24 +33,6 @@ const BANNERS = [
   },
 ];
 
-const CATS = [
-  { label: 'Видеорегистраторы', slug: 'videoregistratory',   icon: Video,     bg: '#0057B8' },
-  { label: 'Видеокамеры',       slug: 'videokamery',          icon: Camera,    bg: '#0891B2' },
-  { label: 'Ноутбуки',          slug: 'noutbuki-monobloki',   icon: Laptop,    bg: '#7C3AED' },
-  { label: 'Мониторы',          slug: 'monitory',             icon: Monitor,   bg: '#0D9488' },
-  { label: 'Компьютеры',        slug: 'kompyutery',           icon: Cpu,       bg: '#DC2626' },
-  { label: 'Аксессуары для ПК', slug: 'aksessuary-dlya-pk',   icon: Mouse,     bg: '#D97706' },
-  { label: 'Принтеры',          slug: 'printery-proektory',   icon: Printer,   bg: '#059669' },
-  { label: 'Сетевые устройства',slug: 'setevye-ustroystva',   icon: Wifi,      bg: '#2563EB' },
-  { label: 'Носители информ.',  slug: 'nositeli-informatsii', icon: HardDrive, bg: '#7C3AED' },
-  { label: 'Домофония',         slug: 'domofoniya',           icon: Phone,     bg: '#0891B2' },
-  { label: 'Контроль доступа',  slug: 'kontrol-dostupa',      icon: Lock,      bg: '#DC2626' },
-  { label: 'Торговое обор.',    slug: 'torgovoe-oborudovanie',icon: ShoppingBag,bg:'#D97706' },
-  { label: 'Телевизоры',        slug: 'televizory-i-audio',   icon: Tv,        bg: '#059669' },
-  { label: 'Техника для дома',  slug: 'tekhnika-dlya-doma',   icon: Home,      bg: '#0057B8' },
-  { label: 'Сигнализация',      slug: 'signalizatsiya-i-po',  icon: Shield,    bg: '#0D9488' },
-  { label: 'Кабель',            slug: 'kabel',                icon: Zap,       bg: '#7C3AED' },
-];
 
 const ADVANTAGES = [
   { icon: Truck,      title: 'Быстрая доставка', desc: 'По всему Бишкеку за 1–2 дня' },
@@ -167,6 +145,29 @@ export default function HomePage() {
         </div>
       </section>
 
+
+      {/* ── Why us ── */}
+      <section className="max-w-7xl mx-auto px-4 py-8">
+        <div className="rounded-3xl p-8 md:p-10" style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-7">Почему выбирают нас</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { icon: Truck,      title: 'Быстрая доставка',    desc: 'Доставим по Бишкеку в день заказа и отправим в регионы.' },
+              { icon: Shield,     title: 'Гарантия качества',   desc: 'Официальная гарантия производителя на всю продукцию.' },
+              { icon: Zap,        title: 'Официальные товары',  desc: 'Только сертифицированная и оригинальная техника.' },
+              { icon: Headphones, title: 'Поддержка клиентов',  desc: 'Консультация и помощь 24/7 через WhatsApp и Telegram.' },
+            ].map(item => (
+              <div key={item.title} className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                  <item.icon size={20} className="text-white" />
+                </div>
+                <p className="font-bold text-white text-base mb-1.5">{item.title}</p>
+                <p className="text-white/75 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── Popular now ── */}
       {popular.length > 0 && (
