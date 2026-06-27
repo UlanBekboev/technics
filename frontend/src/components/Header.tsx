@@ -65,11 +65,10 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 const NAV_LINKS = [
-  { label: 'Главная',       href: '/' },
-  { label: 'Весь каталог',  href: '/catalog' },
-  { label: 'Доставка',      href: '/#delivery' },
-  { label: 'О компании',    href: '/#about' },
-  { label: 'Контакты',      href: '/#contacts' },
+  { label: 'Главная',      href: '/' },
+  { label: 'Весь каталог', href: '/catalog' },
+  { label: 'О компании',   href: '/#about' },
+  { label: 'Контакты',     href: '/#contacts' },
 ];
 
 const TOPBAR_BG = '#051832';
