@@ -41,6 +41,29 @@ const CAT_ICONS: Record<string, LucideIcon> = {
   'aksessuary':             Package,
 };
 
+const CAT_COLORS: Record<string, string> = {
+  'videoregistratory':      '#0057B8',
+  'videokamery':            '#0891B2',
+  'kabel':                  '#7C3AED',
+  'prochee-dlya-videonab':  '#6B7280',
+  'signalizatsiya-i-po':    '#0D9488',
+  'domofoniya':             '#0891B2',
+  'kontrol-dostupa':        '#DC2626',
+  'setevye-ustroystva':     '#2563EB',
+  'nositeli-informatsii':   '#7C3AED',
+  'noutbuki-monobloki':     '#7C3AED',
+  'monitory':               '#0D9488',
+  'kompyutery':             '#DC2626',
+  'aksessuary-dlya-pk':     '#D97706',
+  'printery-proektory':     '#059669',
+  'torgovoe-oborudovanie':  '#D97706',
+  'televizory-i-audio':     '#059669',
+  'tekhnika-dlya-doma':     '#0057B8',
+  'tekhnika-dlya-kukhni':   '#DC2626',
+  'zdorovye-i-krasota':     '#DB2777',
+  'aksessuary':             '#6B7280',
+};
+
 const NAV_LINKS = [
   { label: 'Главная',       href: '/' },
   { label: 'Весь каталог',  href: '/catalog' },
@@ -338,7 +361,8 @@ export default function Header() {
           <div className="py-2">
             <p className="px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">Категории</p>
             {categories.map(cat => {
-              const Icon = CAT_ICONS[cat.slug] ?? Package;
+              const Icon  = CAT_ICONS[cat.slug]  ?? Package;
+              const color = CAT_COLORS[cat.slug] ?? '#6B7280';
               const isExp = expandedCat === cat.id;
               return (
                 <div key={cat.id}>
@@ -353,7 +377,10 @@ export default function Header() {
                     }}
                     className={`w-full flex items-center gap-3 px-5 py-3 text-sm transition-colors ${isExp ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'}`}
                   >
-                    <Icon size={17} className={isExp ? 'text-blue-500' : 'text-gray-400'} />
+                    <span className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: color + '18' }}>
+                      <Icon size={15} style={{ color }} />
+                    </span>
                     <span className="flex-1 text-left">{cat.name}</span>
                     {cat.subcategories?.length > 0 && (
                       isExp
