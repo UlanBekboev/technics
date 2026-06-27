@@ -167,30 +167,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Category Grid ── */}
-      <section className="max-w-7xl mx-auto px-4 pt-8 pb-4">
-        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2.5">
-          <span className="w-1 h-5 rounded-full inline-block" style={{ background: 'linear-gradient(to bottom,#003d8f,#0077e6)' }} />
-          Категории товаров
-        </h2>
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
-          {CATS.map(cat => {
-            const Icon = cat.icon;
-            return (
-              <Link key={cat.slug} href={`/catalog?category=${cat.slug}`}
-                className="group flex flex-col items-center gap-2 p-3 bg-white rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 duration-200"
-                  style={{ background: cat.bg + '18' }}>
-                  <Icon size={22} style={{ color: cat.bg }} />
-                </div>
-                <span className="text-[10px] font-medium text-gray-600 text-center leading-tight group-hover:text-blue-700 transition-colors">
-                  {cat.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
 
       {/* ── Popular now ── */}
       {popular.length > 0 && (
