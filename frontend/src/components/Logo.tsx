@@ -1,6 +1,6 @@
-export default function Logo({ size = 44 }: { size?: number }) {
+export default function Logo({ size = 44, className }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       {/* Background chip */}
       <rect width="44" height="44" rx="10" fill="#0057B8" />
 
