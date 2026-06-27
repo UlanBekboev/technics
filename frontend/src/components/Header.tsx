@@ -67,9 +67,9 @@ const CAT_COLORS: Record<string, string> = {
 const NAV_LINKS = [
   { label: 'Главная',       href: '/' },
   { label: 'Весь каталог',  href: '/catalog' },
-  { label: 'Доставка',      href: '#' },
-  { label: 'О компании',    href: '#' },
-  { label: 'Контакты',      href: '#' },
+  { label: 'Доставка',      href: '/#delivery' },
+  { label: 'О компании',    href: '/#about' },
+  { label: 'Контакты',      href: '/#contacts' },
 ];
 
 const TOPBAR_BG = '#051832';
@@ -339,7 +339,7 @@ export default function Header() {
           {/* Навигация */}
           <div className="py-2 border-b border-gray-100">
             {NAV_LINKS.map(item => (
-              <Link key={item.href} href={item.href} onClick={closeDrawer}
+              <Link key={item.label} href={item.href} onClick={closeDrawer}
                 className="flex items-center gap-3 px-5 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
                 <ChevronRight size={14} className="text-gray-300" />
                 {item.label}
