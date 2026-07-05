@@ -7,11 +7,13 @@ import {
   adminCreateProduct,
   adminUpdateProduct,
   adminDeleteProduct,
+  getCloudinaryParams,
+  adminSaveProductImageUrl,
   getCategoriesFlat,
   getBrands,
   uploadImage,
 } from '@/lib/api';
-import { Pencil, Trash2, Plus, X, Upload, Loader2, RefreshCw } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Upload, Loader2, RefreshCw, ImagePlus, MoreVertical } from 'lucide-react';
 
 type Category = { id: number; name: string; slug: string };
 type Brand = { id: number; name: string; slug: string };
@@ -40,6 +42,7 @@ const EMPTY_FORM = {
   oldPrice: '',
   stock: '0',
   isActive: true,
+  isNew: false,
   categoryId: '',
   brandId: '',
   images: [] as ProductImage[],
@@ -67,14 +70,29 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [fetchingImg, setFetchingImg] = useState<number | null>(null);
+  const [imgModal, setImgModal] = useState<Product | null>(null);
+  const [pastedFile, setPastedFile] = useState<File | null>(null);
+  const [pastedPreview, setPastedPreview] = useState('');
+  const [imgUrl, setImgUrl] = useState('');
   const [slugLocked, setSlugLocked] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imgFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
     if (user.role !== 'ADMIN') { router.push('/'); return; }
     load();
   }, [user]);
+
+  // Закрывает dropdown по клику вне
+  useEffect(() => {
+    if (openDropdown === null) return;
+    const close = () => setOpenDropdown(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [openDropdown]);
 
   async function load() {
     setLoading(true);
@@ -106,6 +124,7 @@ export default function AdminProductsPage() {
       oldPrice: p.oldPrice ? String(p.oldPrice) : '',
       stock: String(p.stock),
       isActive: p.isActive,
+      isNew: (p as any).isNew ?? false,
       categoryId: String(p.categoryId),
       brandId: p.brandId ? String(p.brandId) : '',
       images: p.images,
@@ -154,7 +173,7 @@ export default function AdminProductsPage() {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     setSaving(true);
     try {
@@ -166,6 +185,7 @@ export default function AdminProductsPage() {
         oldPrice: form.oldPrice ? parseFloat(form.oldPrice) : undefined,
         stock: parseInt(form.stock),
         isActive: form.isActive,
+        isNew: form.isNew,
         categoryId: parseInt(form.categoryId),
         brandId: form.brandId ? parseInt(form.brandId) : undefined,
         images: form.images,
@@ -196,6 +216,84 @@ export default function AdminProductsPage() {
     setDeleting(null);
   }
 
+  function closeImgModal() {
+    setImgModal(null);
+    setPastedFile(null);
+    setImgUrl('');
+    if (pastedPreview) { URL.revokeObjectURL(pastedPreview); setPastedPreview(''); }
+  }
+
+  function pickImgFile(file: File) {
+    if (!file.type.startsWith('image/')) return;
+    if (pastedPreview) URL.revokeObjectURL(pastedPreview);
+    setPastedFile(file);
+    setPastedPreview(URL.createObjectURL(file));
+  }
+
+  // Ctrl+V глобальный listener пока модал открыт
+  useEffect(() => {
+    if (!imgModal) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const item = Array.from(e.clipboardData?.items ?? []).find((i) => i.type.startsWith('image/'));
+      if (item) { const f = item.getAsFile(); if (f) pickImgFile(f); }
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [imgModal]);
+
+  async function handleSaveUrl(p: Product, url: string) {
+    if (!url.trim()) return;
+    setFetchingImg(p.id);
+    closeImgModal();
+    try {
+      const res = await adminSaveProductImageUrl(p.id, url.trim());
+      setProducts((prev) => prev.map((item) =>
+        item.id === p.id
+          ? { ...item, images: [{ url: url.trim(), isMain: res.isMain ?? false }, ...item.images] }
+          : item,
+      ));
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? 'Ошибка сохранения URL');
+    }
+    setFetchingImg(null);
+  }
+
+  async function handleUploadFile(p: Product, file: File) {
+    setFetchingImg(p.id);
+    closeImgModal();
+    try {
+      // 1. Получаем параметры подписи с бэкенда (без сетевых вызовов на сервере)
+      const params = await getCloudinaryParams();
+
+      // 2. Загружаем напрямую из браузера в Cloudinary
+      const form = new FormData();
+      form.append('file', file);
+      form.append('signature', params.signature);
+      form.append('timestamp', String(params.timestamp));
+      form.append('api_key', params.apiKey);
+      form.append('folder', params.folder);
+
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${params.cloudName}/image/upload`,
+        { method: 'POST', body: form },
+      );
+      const uploadData = await uploadRes.json();
+      if (!uploadData.secure_url) throw new Error(uploadData.error?.message ?? 'Cloudinary upload failed');
+
+      // 3. Сохраняем URL в базе
+      const res = await adminSaveProductImageUrl(p.id, uploadData.secure_url);
+
+      setProducts((prev) => prev.map((item) =>
+        item.id === p.id
+          ? { ...item, images: [{ url: uploadData.secure_url, isMain: res.isMain ?? false }, ...item.images.filter((img) => !img.url.includes('placehold'))] }
+          : item,
+      ));
+    } catch (err: any) {
+      alert(err?.message ?? err?.response?.data?.message ?? 'Ошибка загрузки изображения');
+    }
+    setFetchingImg(null);
+  }
+
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.category?.name?.toLowerCase().includes(search.toLowerCase()),
@@ -206,17 +304,18 @@ export default function AdminProductsPage() {
   );
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="bg-gray-50 min-h-screen overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-3 xs:px-4 py-6 xs:py-8">
 
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Товары</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Товары</h1>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 text-white text-sm font-medium px-4 py-2 rounded-lg transition-opacity hover:opacity-90"
+            className="flex items-center gap-2 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-opacity hover:opacity-90 flex-shrink-0"
             style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}
           >
-            <Plus size={16} /> Добавить товар
+            <Plus size={16} />
+            <span className="hidden xs:inline sm:inline">Добавить товар</span>
           </button>
         </div>
 
@@ -229,15 +328,15 @@ export default function AdminProductsPage() {
         />
 
         <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-          <table className="w-full text-sm min-w-[500px]">
+          <table className="w-full text-sm min-w-[280px]">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Товар</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Категория</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Цена</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Склад</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Статус</th>
-                <th className="px-4 py-3" />
+                <th className="text-left px-2 xs:px-4 py-3 font-semibold text-gray-600">Товар</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden lg:table-cell">Категория</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Цена</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden xl:table-cell">Склад</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Статус</th>
+                <th className="px-2 xs:px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -250,54 +349,103 @@ export default function AdminProductsPage() {
                 return (
                   <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                     {/* Фото + название — кликабельны */}
-                    <td className="px-4 py-3">
+                    <td className="px-2 xs:px-4 py-3 max-w-0 w-full">
                       <a
                         href={`/product/${p.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 group"
+                        className="flex items-center gap-2 xs:gap-3 group w-full"
                         title="Открыть страницу товара"
                       >
                         {mainImg ? (
-                          <img src={mainImg.url} alt="" className="w-12 h-12 object-cover rounded-lg border border-gray-100 flex-shrink-0 group-hover:border-blue-300 transition-colors" />
+                          <img src={mainImg.url} alt="" className="w-9 h-9 xs:w-12 xs:h-12 object-cover rounded-lg border border-gray-100 flex-shrink-0 group-hover:border-blue-300 transition-colors" />
                         ) : (
-                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs flex-shrink-0">нет</div>
+                          <div className="w-9 h-9 xs:w-12 xs:h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 text-xs flex-shrink-0">нет</div>
                         )}
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">{p.name}</div>
+                        <div className="min-w-0 overflow-hidden flex-1">
+                          <div className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">{p.name}</div>
                           <div className="text-xs text-gray-400 truncate">{p.slug}</div>
                         </div>
                       </a>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{p.category?.name}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
+                    <td className="px-4 py-3 text-gray-600 hidden lg:table-cell">{p.category?.name}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap hidden sm:table-cell">
                       {Number(p.price).toLocaleString('ru')} сом
                       {p.oldPrice && (
                         <div className="text-xs text-gray-400 line-through">{Number(p.oldPrice).toLocaleString('ru')}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{p.stock} шт</td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
+                    <td className="px-4 py-3 text-gray-600 hidden xl:table-cell">{p.stock} шт</td>
+                    <td className="px-4 py-3 hidden md:table-cell">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {p.isActive ? 'Активен' : 'Скрыт'}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 justify-end">
+                    <td className="px-2 xs:px-4 py-3">
+                      {/* ── Три точки: только < 390px ── */}
+                      <div className="relative 2xs:hidden flex justify-end">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === p.id ? null : p.id); }}
+                          className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                        >
+                          <MoreVertical size={15} />
+                        </button>
+                        {openDropdown === p.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-30 overflow-hidden min-w-[130px]">
+                            <button
+                              onClick={() => { openEdit(p); setOpenDropdown(null); }}
+                              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                            >
+                              <Pencil size={13} /> Изменить
+                            </button>
+                            <button
+                              onClick={() => { setImgModal(p); setPastedFile(null); setPastedPreview(''); setOpenDropdown(null); }}
+                              disabled={fetchingImg === p.id}
+                              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-600 hover:bg-green-50 hover:text-green-600 transition-colors disabled:opacity-50"
+                            >
+                              {fetchingImg === p.id
+                                ? <Loader2 size={13} className="animate-spin text-green-500" />
+                                : <ImagePlus size={13} />}
+                              Фото
+                            </button>
+                            <button
+                              onClick={() => { handleDelete(p.id); setOpenDropdown(null); }}
+                              disabled={deleting === p.id}
+                              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 border-t border-gray-50"
+                            >
+                              {deleting === p.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                              Удалить
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Обычные кнопки: >= 390px ── */}
+                      <div className="hidden 2xs:flex items-center gap-0.5 xs:gap-1 justify-end">
                         <button
                           onClick={() => openEdit(p)}
-                          className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                          className="p-1.5 xs:p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
                           title="Редактировать"
                         >
-                          <Pencil size={15} />
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => { setImgModal(p); setPastedFile(null); setPastedPreview(''); }}
+                          disabled={fetchingImg === p.id}
+                          className="p-1.5 xs:p-2 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50"
+                          title="Загрузить фото (скриншот / файл)"
+                        >
+                          {fetchingImg === p.id
+                            ? <Loader2 size={14} className="animate-spin text-green-500" />
+                            : <ImagePlus size={14} />}
                         </button>
                         <button
                           onClick={() => handleDelete(p.id)}
                           disabled={deleting === p.id}
-                          className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                          className="p-1.5 xs:p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                           title="Удалить"
                         >
-                          {deleting === p.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                          {deleting === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                         </button>
                       </div>
                     </td>
@@ -411,14 +559,28 @@ export default function AdminProductsPage() {
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
                   />
                 </div>
-                <div className="flex items-center gap-2 pt-5">
-                  <input
-                    type="checkbox" id="isActive"
-                    checked={form.isActive}
-                    onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-                    className="w-4 h-4 rounded accent-blue-600"
-                  />
-                  <label htmlFor="isActive" className="text-sm text-gray-700 font-medium">Активен</label>
+                <div className="flex flex-col gap-2 pt-5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox" id="isActive"
+                      checked={form.isActive}
+                      onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+                      className="w-4 h-4 rounded accent-blue-600"
+                    />
+                    <label htmlFor="isActive" className="text-sm text-gray-700 font-medium">Активен</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox" id="isNew"
+                      checked={form.isNew}
+                      onChange={(e) => setForm((f) => ({ ...f, isNew: e.target.checked }))}
+                      className="w-4 h-4 rounded accent-green-600"
+                    />
+                    <label htmlFor="isNew" className="text-sm text-gray-700 font-medium flex items-center gap-1.5">
+                      Новинка
+                      <span className="text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold">НОВИНКА</span>
+                    </label>
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">Описание</label>
@@ -496,6 +658,91 @@ export default function AdminProductsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Модал загрузки фото через скриншот / файл */}
+      {imgModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-gray-900">Загрузить фото</h2>
+              <button onClick={closeImgModal} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-400 mb-4 truncate">
+              {imgModal.name}
+            </p>
+
+            {/* URL поле */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Вставить URL фото (например, с emin.kg)</label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://emin.kg/files/..."
+                  value={imgUrl}
+                  onChange={(e) => setImgUrl(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                />
+                <button
+                  onClick={() => handleSaveUrl(imgModal, imgUrl)}
+                  disabled={!imgUrl.trim() || fetchingImg === imgModal.id}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40 transition-opacity hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}
+                >
+                  Сохранить
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-xs text-gray-400">или загрузить файл / скриншот</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+
+            {/* Зона вставки / перетаскивания */}
+            <div
+              className="border-2 border-dashed rounded-xl mb-4 flex items-center justify-center cursor-pointer transition-colors"
+              style={{ minHeight: 180, borderColor: pastedFile ? '#22c55e' : '#d1d5db', background: pastedFile ? '#f0fdf4' : '#f9fafb' }}
+              onClick={() => imgFileRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) pickImgFile(f); }}
+            >
+              {pastedPreview ? (
+                <img src={pastedPreview} alt="preview" className="max-h-44 max-w-full object-contain rounded-lg p-2" />
+              ) : (
+                <div className="text-center text-gray-400 px-4 py-6 select-none">
+                  <div className="text-4xl mb-3">📋</div>
+                  <p className="text-sm font-semibold text-gray-600">Нажмите <kbd className="bg-gray-100 border border-gray-200 rounded px-1 py-0.5 text-xs font-mono">Ctrl+V</kbd> чтобы вставить скриншот</p>
+                  <p className="text-xs mt-2 text-gray-400">или нажмите сюда / перетащите файл</p>
+                  <p className="text-xs mt-3 text-gray-300">Найдите фото на <a onClick={(e) => e.stopPropagation()} href={`https://www.google.com/search?q=${encodeURIComponent(imgModal.name)}&tbm=isch`} target="_blank" rel="noreferrer" className="text-blue-400 underline">Google</a> или <a onClick={(e) => e.stopPropagation()} href={`https://yandex.ru/images/search?text=${encodeURIComponent(imgModal.name)}`} target="_blank" rel="noreferrer" className="text-blue-400 underline">Яндекс</a>, сделайте скриншот <kbd className="bg-gray-100 border border-gray-200 rounded px-1 text-xs font-mono">Win+Shift+S</kbd> и нажмите Ctrl+V</p>
+                </div>
+              )}
+            </div>
+
+            <input ref={imgFileRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) pickImgFile(f); e.target.value = ''; }} />
+
+            <div className="flex gap-3">
+              <button onClick={closeImgModal} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
+                Отмена
+              </button>
+              <button
+                onClick={() => pastedFile && handleUploadFile(imgModal, pastedFile)}
+                disabled={!pastedFile || fetchingImg === imgModal.id}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg,#16a34a,#22c55e)' }}
+              >
+                {fetchingImg === imgModal.id
+                  ? <><Loader2 size={14} className="animate-spin" /> Загрузка...</>
+                  : <><ImagePlus size={14} /> Загрузить</>}
+              </button>
+            </div>
           </div>
         </div>
       )}

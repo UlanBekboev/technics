@@ -51,16 +51,16 @@ export default function AdminOrdersPage() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="bg-gray-50 min-h-screen overflow-x-hidden">
+      <div className="max-w-6xl mx-auto px-3 xs:px-4 py-6 xs:py-8">
 
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Все заказы</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Все заказы</h1>
           <span className="text-sm text-gray-400">Всего: {orders.length}</span>
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-1 2xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
           {STATUSES.map(s => (
             <div key={s.value} className="bg-white rounded-xl border border-gray-100 p-3 text-center">
               <div className="text-2xl font-bold text-gray-900">{counts[s.value] ?? 0}</div>
@@ -78,58 +78,60 @@ export default function AdminOrdersPage() {
             {orders.map((order) => {
               const s = statusMeta(order.status);
               return (
-                <div key={order.id} className="bg-white rounded-xl border border-gray-100 p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
+                <div key={order.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
 
-                    {/* Left: order info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-bold text-gray-900">Заказ #{order.id}</span>
-                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${s.color}`}>{s.label}</span>
-                        <span className="text-xs text-gray-400 ml-auto">
-                          {new Date(order.createdAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {/* ── Шапка: номер + сумма ── */}
+                  <div className="flex items-center justify-between px-3 xs:px-5 py-3 border-b border-gray-50">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-bold text-gray-900 whitespace-nowrap">Заказ #{order.id}</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${s.color}`}>{s.label}</span>
+                    </div>
+                    <div className="flex flex-col items-end flex-shrink-0 ml-2">
+                      <span className="font-bold text-base xs:text-xl whitespace-nowrap" style={{ color: '#C01D2E' }}>
+                        {Number(order.total).toLocaleString('ru')} сом
+                      </span>
+                      <span className="text-[10px] xs:text-xs text-gray-400 whitespace-nowrap">
+                        {new Date(order.createdAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ── Клиент + адрес ── */}
+                  <div className="px-3 xs:px-5 py-2.5 border-b border-gray-50 text-sm text-gray-600 space-y-0.5">
+                    <div className="flex items-baseline gap-1 min-w-0">
+                      <span>👤</span>
+                      <span className="font-medium truncate">{order.user?.name}</span>
+                      <span className="text-gray-400 truncate text-xs">{order.user?.email}</span>
+                    </div>
+                    {order.user?.phone && <div className="truncate">📞 {order.user.phone}</div>}
+                    {order.address    && <div className="truncate">📍 {order.address}</div>}
+                    {order.comment    && <div className="text-gray-400 italic truncate">💬 {order.comment}</div>}
+                  </div>
+
+                  {/* ── Товары ── */}
+                  <div className="px-3 xs:px-5 py-2.5 border-b border-gray-50 space-y-1">
+                    {order.items.map((item: any) => (
+                      <div key={item.id} className="flex justify-between text-sm gap-2">
+                        <span className="text-gray-600 truncate flex-1">{item.product.name} × {item.quantity}</span>
+                        <span className="text-gray-700 font-medium flex-shrink-0 whitespace-nowrap">
+                          {(Number(item.price) * item.quantity).toLocaleString('ru')} сом
                         </span>
                       </div>
+                    ))}
+                  </div>
 
-                      {/* Client info */}
-                      <div className="text-sm text-gray-600 mb-2 space-y-0.5">
-                        <div>👤 <span className="font-medium">{order.user?.name}</span> · {order.user?.email}</div>
-                        {order.user?.phone && <div>📞 {order.user.phone}</div>}
-                        {order.address && <div>📍 {order.address}</div>}
-                        {order.comment && <div className="text-gray-400 italic">💬 {order.comment}</div>}
-                      </div>
-
-                      {/* Items */}
-                      <div className="space-y-0.5">
-                        {order.items.map((item: any) => (
-                          <div key={item.id} className="flex justify-between text-sm">
-                            <span className="text-gray-600 line-clamp-1 flex-1 mr-3">
-                              {item.product.name} × {item.quantity}
-                            </span>
-                            <span className="text-gray-700 font-medium flex-shrink-0">
-                              {(Number(item.price) * item.quantity).toLocaleString('ru')} сом
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Right: total + status control */}
-                    <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                      <div className="text-xl font-bold" style={{ color: '#C01D2E' }}>
-                        {Number(order.total).toLocaleString('ru')} сом
-                      </div>
-                      <select
-                        value={order.status}
-                        disabled={updating === order.id}
-                        onChange={e => handleStatus(order.id, e.target.value)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-blue-400 cursor-pointer disabled:opacity-50"
-                      >
-                        {STATUSES.map(s => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* ── Статус (полная ширина) ── */}
+                  <div className="px-3 xs:px-5 py-3">
+                    <select
+                      value={order.status}
+                      disabled={updating === order.id}
+                      onChange={e => handleStatus(order.id, e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-blue-400 cursor-pointer disabled:opacity-50"
+                    >
+                      {STATUSES.map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               );

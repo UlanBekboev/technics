@@ -1,272 +1,313 @@
-'use client';
-import { useState } from 'react';
-import { Phone, CheckCircle, ShoppingCart, Tag, Wifi, Camera } from 'lucide-react';
+"use client";
 
-function CamPhoto({ src, model, label }: { src: string; model: string; label: string }) {
-  const [failed, setFailed] = useState(false);
+import Image from "next/image";
+import Link from "next/link";
+import { Phone, CheckCircle, Tag, Wifi, Camera, ShoppingCart, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getSettings } from "@/lib/api";
+
+const EZVIZ_CAMERAS_DEFAULT = [
+  {
+    id: 2733,
+    slug: "ip-camera-ezviz-h6c-pro1080",
+    name: "EZVIZ H6c Pro",
+    type: "Кубическая поворотная 2МР",
+    img: "https://emin.kg/files/9b29d4867b37401aae450b8c46fbb829",
+    price: 2350,
+    specs: ["2MP / 1080p", "IR ночь 10м", "Wi-Fi", "MicroSD", "Микрофон + Динамик"],
+  },
+  {
+    id: 2771,
+    slug: "wifi-kamera-ezviz-h6c-pro-3k",
+    name: "EZVIZ H6C Pro 3K",
+    type: "Кубическая поворотная 5МР",
+    img: "https://emin.kg/files/9108eb5fc94d46f99b18d5f79aed7f2e",
+    price: 3200,
+    specs: ["5MP / 3K", "IR ночь 10м", "Wi-Fi", "MicroSD", "Микрофон + Динамик"],
+  },
+  {
+    id: 2318,
+    slug: "ip-camera-ezviz-h8c-pro-3k",
+    name: "EZVIZ H8c PRO 3K",
+    type: "Уличная поворотная 5МР",
+    img: "https://emin.kg/files/1153f9859209440296d7b7c12a59aa33",
+    price: 4600,
+    specs: ["5MP / 3K", "LED ночь 30м", "Wi-Fi", "MicroSD", "Микрофон + Динамик"],
+  },
+  {
+    id: 0,
+    slug: "",
+    name: "EZVIZ H1c",
+    type: "Кубическая 2МР внутренняя",
+    img: "",
+    price: 0,
+    specs: ["2MP / 1080p", "IR ночь", "Wi-Fi", "MicroSD", "Magnetic Base"],
+  },
+];
+
+const TVT_CAMERAS_DEFAULT = [
+  {
+    name: "TVT TD-9540S5L-D",
+    type: "4MP купольная уличная Dual Illumination",
+    img: "",
+    specs: ["4MP / 2560×1440", "Dual Illumination", "Микрофон", "IP67", "H.265+"],
+  },
+  {
+    name: "TVT TD-9440S5L-D",
+    type: "4MP цилиндрическая уличная",
+    img: "",
+    specs: ["4MP / 2560×1440", "Dual Illumination", "Микрофон", "IP67", "H.265+"],
+  },
+];
+
+const TVT_PACKAGES = [
+  { label: "Комплект с HDD 500 ГБ", note: "Запись до 5 дней", price: 21900 },
+  { label: "Комплект с HDD 1 ТБ", note: "Запись до 1 недели", price: 24900 },
+];
+
+const TVT_FEATURES = [
+  "4 камеры морозостойкие и влагозащищённые",
+  "Со звуком и цветной подсветкой",
+  "NVR 4-канальный с POE",
+  "Кабель 50 метров в комплекте",
+  "Все аксессуары включены",
+  "Установка и настройка под ключ",
+];
+
+const INCLUDED = [
+  "Флеш карта 64 ГБ", "10 дней записи",
+  "Установка под ключ", "Расходные материалы",
+  "Настройка приложения", "Гарантия 1 год",
+];
+
+function CTA({ guarantee }: { guarantee: string }) {
   return (
-    <div className="flex flex-col items-center justify-center p-4 gap-1.5 h-full">
-      {!failed ? (
-        <img
-          src={src}
-          alt={model}
-          className="flex-1 w-full object-contain"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <div className="flex-1 w-full flex items-center justify-center rounded-xl"
-          style={{ background: 'linear-gradient(135deg,#e8f0fe,#dbeafe)' }}>
-          <Camera size={48} style={{ color: '#0057B8', opacity: 0.4 }} />
+    <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center" style={{ borderColor: "hsl(var(--border))" }}>
+      <div className="flex flex-1 items-center gap-2">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary">
+          <Star className="h-4 w-4 text-white" />
         </div>
-      )}
-      <div className="text-center">
-        <p className="text-xs font-bold text-gray-700">{model}</p>
-        <p className="text-[10px] text-gray-400">{label}</p>
+        <p className="text-xs font-semibold">{guarantee}</p>
+      </div>
+      <div className="flex w-full gap-2 sm:w-auto">
+        <a href="tel:+996704443333"
+          className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
+          style={{ background: "linear-gradient(135deg,#003d8f,#0077e6)" }}>
+          <Phone className="h-4 w-4" /> Позвонить
+        </a>
+        <a href="https://wa.me/996704443333" target="_blank" rel="noopener noreferrer"
+          className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-5 py-2.5 text-sm font-bold text-green-700 hover:bg-green-100">
+          <ShoppingCart className="h-4 w-4" /> WhatsApp
+        </a>
       </div>
     </div>
   );
 }
 
-const TVT_PACKAGES = [
-  { label: 'Комплект с HDD 500 ГБ', note: 'Запись до 5 дней',   price: 21900 },
-  { label: 'Комплект с HDD 1 ТБ',   note: 'Запись до 1 недели', price: 24900 },
-];
-
-const TVT_FEATURES = [
-  '2 внутренние и 2 наружные (морозостойкие и влагозащищённые)',
-  'С подсветкой и со звуком',
-  'NVR 4-канальный с POE — удобное подключение',
-  'Кабель 50 метров в комплекте',
-  'Полный комплект аксессуаров',
-  'Установка и настройка под ключ',
-];
-
-const EZVIZ_ITEMS = [
-  {
-    name: 'EZVIZ H6c Pro 2K',
-    type: 'Кубическая 3МР',
-    price: 5790,
-    img: 'https://www.ezvizlife.com/content/dam/ezviz/global-website/2022/H6c-Pro/product/H6c-Pro-2K-product-image.png',
-  },
-  {
-    name: 'EZVIZ H1c',
-    type: 'Кубическая 2МР',
-    price: 5390,
-    img: 'https://www.ezvizlife.com/content/dam/ezviz/global-website/2022/H1c/product/H1c-product-image.png',
-  },
-  {
-    name: 'EZVIZ C8W Pro 2K',
-    type: 'Уличная Wi-Fi камера',
-    price: 6490,
-    img: 'https://www.ezvizlife.com/content/dam/ezviz/global-website/2022/C8W-Pro-2K/product/C8W-Pro-2K-product-image.png',
-  },
-  {
-    name: 'OLAX CPE MT-30',
-    type: 'Сим-карта роутер 4G',
-    price: 2700,
-    img: 'https://images.unsplash.com/photo-1606904825846-647eb07f5be2?w=300&q=80',
-  },
-];
-
-const ITEM_FEATURES = ['Флеш карта 64ГБ', '10 дней записи', 'Установка + расход материалы', 'Гарантия 1 год'];
-
-function CallButtons({ gradient }: { gradient: string }) {
-  return (
-    <div className="flex gap-2 w-full sm:w-auto">
-      <a href="tel:+996704443333"
-        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-opacity"
-        style={{ background: gradient }}>
-        <Phone size={14} /> Позвонить
-      </a>
-      <a href="https://wa.me/996704443333" target="_blank" rel="noopener noreferrer"
-        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border border-green-200 text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
-        <ShoppingCart size={14} /> WhatsApp
-      </a>
-    </div>
-  );
-}
-
 export default function AktsiiPage() {
+  const [ezvizImgs, setEzvizImgs] = useState<string[]>(["", "", "", ""]);
+  const [tvtImgs, setTvtImgs] = useState<string[]>(["", ""]);
+  const [ezvizNames, setEzvizNames] = useState<string[]>(["", "", "", ""]);
+  const [tvtNames, setTvtNames] = useState<string[]>(["", ""]);
+
+  useEffect(() => {
+    getSettings().then((s) => {
+      setEzvizImgs([
+        s["promo_ezviz_0"] || EZVIZ_CAMERAS_DEFAULT[0].img,
+        s["promo_ezviz_1"] || EZVIZ_CAMERAS_DEFAULT[1].img,
+        s["promo_ezviz_2"] || EZVIZ_CAMERAS_DEFAULT[2].img,
+        s["promo_ezviz_3"] || EZVIZ_CAMERAS_DEFAULT[3].img,
+      ]);
+      setTvtImgs([
+        s["promo_tvt_0"] || TVT_CAMERAS_DEFAULT[0].img,
+        s["promo_tvt_1"] || TVT_CAMERAS_DEFAULT[1].img,
+      ]);
+      setEzvizNames([
+        s["promo_ezviz_0_name"] || "",
+        s["promo_ezviz_1_name"] || "",
+        s["promo_ezviz_2_name"] || "",
+        s["promo_ezviz_3_name"] || "",
+      ]);
+      setTvtNames([
+        s["promo_tvt_0_name"] || "",
+        s["promo_tvt_1_name"] || "",
+      ]);
+    }).catch(() => {});
+  }, []);
+
+  const EZVIZ_CAMERAS = EZVIZ_CAMERAS_DEFAULT.map((c, i) => ({
+    ...c,
+    img: ezvizImgs[i] ?? c.img,
+    name: ezvizNames[i] || c.name,
+  }));
+  const TVT_CAMERAS = TVT_CAMERAS_DEFAULT.map((c, i) => ({
+    ...c,
+    img: tvtImgs[i] ?? c.img,
+    name: tvtNames[i] || c.name,
+  }));
+
   return (
-    <div className="bg-gray-50 min-h-screen py-8">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="min-h-screen py-8" style={{ background: "hsl(var(--secondary)/.3)" }}>
+      <div className="max-w-5xl mx-auto px-4 space-y-8">
 
         {/* Заголовок */}
-        <div className="mb-8">
+        <div>
           <div className="flex items-center gap-2 mb-1">
-            <Tag size={20} style={{ color: '#0057B8' }} />
-            <h1 className="text-2xl font-bold text-gray-900">Акции и спецпредложения</h1>
+            <Tag className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-extrabold">Акции и спецпредложения</h1>
           </div>
-          <p className="text-gray-500 text-sm">Выгодные комплекты с установкой под ключ</p>
+          <p className="text-sm text-muted-foreground">Выгодные комплекты с установкой под ключ</p>
         </div>
 
-        <div className="flex flex-col gap-8">
-
-          {/* ══ Акция 1: Видеонаблюдение под ключ ══ */}
-          <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
-
-            {/* Шапка */}
-            <div className="px-6 py-5 flex items-center gap-4"
-              style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                <Camera size={24} className="text-white" />
-              </div>
-              <div>
-                <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-red-500 text-white px-2 py-0.5 rounded-full mb-1">
-                  АКЦИЯ
-                </span>
-                <h2 className="text-lg font-bold text-white leading-tight">Видеонаблюдение под ключ</h2>
-                <p className="text-white/70 text-xs">4МР качество изображения · TVT</p>
-              </div>
+        {/* АКЦИЯ 1: Wi-Fi камеры EZVIZ */}
+        <div className="rounded-3xl overflow-hidden border bg-white shadow-sm" style={{ borderColor: "hsl(var(--border))" }}>
+          <div className="flex items-center gap-4 px-6 py-5"
+            style={{ background: "linear-gradient(135deg,#0057B8,#0077e6)" }}>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20">
+              <Wifi className="h-6 w-6 text-white" />
             </div>
-
-            {/* Фото камер TVT 9440 и 9540 */}
-            <div className="grid grid-cols-2 divide-x divide-gray-200 bg-gray-50" style={{ height: 200 }}>
-              <CamPhoto src="https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9440.jpg" model="TVT TD-9440" label="4МР · Купольная" />
-              <CamPhoto src="https://res.cloudinary.com/ddoloafbp/image/upload/tvt-9540.jpg" model="TVT TD-9540" label="5МР · Купольная" />
-            </div>
-
-            <div className="p-6">
-              {/* Пакеты */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-                {TVT_PACKAGES.map(pkg => (
-                  <div key={pkg.label} className="rounded-2xl p-5 text-white text-center"
-                    style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
-                    <p className="font-bold text-sm mb-1">{pkg.label}</p>
-                    <p className="text-white/70 text-xs mb-3">{pkg.note}</p>
-                    <p className="text-4xl font-black">{pkg.price.toLocaleString()}</p>
-                    <p className="text-white/80 text-sm">сом</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Характеристики */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
-                {TVT_FEATURES.map(f => (
-                  <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
-                    {f}
-                  </div>
-                ))}
-              </div>
-
-              {/* Теги */}
-              <div className="flex flex-wrap gap-2 mb-5">
-                {['Надёжно и безопасно', 'Профессиональная установка', 'Гарантия качества'].map(a => (
-                  <span key={a} className="text-xs font-medium px-3 py-1.5 rounded-full border border-blue-100 text-blue-700 bg-blue-50">
-                    {a}
-                  </span>
-                ))}
-              </div>
-
-              {/* Гарантия + CTA */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-5 border-t border-gray-100">
-                <div className="flex items-center gap-2 flex-1">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
-                    <CheckCircle size={16} className="text-white" />
-                  </div>
-                  <p className="text-xs font-semibold text-gray-700">2 ГОДА гарантии на камеры и работы</p>
-                </div>
-                <CallButtons gradient="linear-gradient(135deg,#003d8f,#0077e6)" />
-              </div>
+            <div>
+              <span className="mb-1 inline-block rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                АКЦИЯ
+              </span>
+              <h2 className="text-lg font-bold leading-tight text-white">Wi-Fi камеры EZVIZ</h2>
+              <p className="text-xs text-white/70">С установкой и записью · без прокладки кабеля</p>
             </div>
           </div>
 
-          {/* ══ Акция 2: Wi-Fi камеры EZVIZ ══ */}
-          <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
-
-            {/* Шапка */}
-            <div className="px-6 py-5 flex items-center gap-4"
-              style={{ background: 'linear-gradient(135deg,#0057B8,#0099ff)' }}>
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                <Wifi size={24} className="text-white" />
-              </div>
-              <div>
-                <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-red-500 text-white px-2 py-0.5 rounded-full mb-1">
-                  АКЦИЯ
-                </span>
-                <h2 className="text-lg font-bold text-white leading-tight">Wi-Fi камеры EZVIZ</h2>
-                <p className="text-white/70 text-xs">С установкой и записью</p>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {/* Карточки камер */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                {EZVIZ_ITEMS.map(item => (
-                  <div key={item.name} className="border border-gray-100 rounded-2xl overflow-hidden hover:border-blue-200 hover:shadow-sm transition-all">
-                    {/* Фото */}
-                    <div className="bg-gray-50 flex items-center justify-center" style={{ height: 130 }}>
-                      <img
-                        src={item.img}
-                        alt={item.name}
-                        className="h-full w-full object-contain p-3"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
+          <div className="p-6">
+            {/* Карточки камер */}
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {EZVIZ_CAMERAS.map((cam) => {
+                const inner = (
+                  <>
+                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-secondary flex items-center justify-center">
+                      {cam.img
+                        ? <Image src={cam.img} alt={cam.name} fill className="object-contain p-1" unoptimized />
+                        : <Wifi className="h-8 w-8 text-muted-foreground/30" />}
                     </div>
-                    {/* Инфо */}
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div>
-                          <p className="font-bold text-gray-900 text-sm">{item.name}</p>
-                          <p className="text-xs text-gray-400">{item.type}</p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-xs text-gray-400 uppercase tracking-wide">Цена</p>
-                          <p className="text-xl font-black" style={{ color: '#0057B8' }}>{item.price.toLocaleString()}</p>
-                          <p className="text-xs text-gray-500">сом</p>
-                        </div>
-                      </div>
-                      <ul className="space-y-1">
-                        {ITEM_FEATURES.map(f => (
-                          <li key={f} className="flex items-center gap-1.5 text-xs text-gray-600">
-                            <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
-                            {f}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-sm transition-colors group-hover:text-primary">{cam.name}</p>
+                      <p className="mb-2 text-xs text-muted-foreground">{cam.type}</p>
+                      <ul className="mb-2 space-y-0.5">
+                        {cam.specs.map((s) => (
+                          <li key={s} className="flex items-center gap-1 text-xs text-foreground/70">
+                            <CheckCircle className="h-3 w-3 shrink-0 text-green-500" /> {s}
                           </li>
                         ))}
                       </ul>
+                      {cam.price > 0 && (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-black text-primary">{cam.price.toLocaleString("ru")}</span>
+                          <span className="text-xs text-muted-foreground">сом</span>
+                        </div>
+                      )}
                     </div>
+                  </>
+                );
+                return cam.slug
+                  ? <Link key={cam.name} href={`/product/${cam.slug}`}
+                      className="group flex gap-4 rounded-2xl border p-4 transition-all hover:border-primary/40 hover:shadow-sm"
+                      style={{ borderColor: "hsl(var(--border))" }}>{inner}</Link>
+                  : <div key={cam.name}
+                      className="group flex gap-4 rounded-2xl border p-4"
+                      style={{ borderColor: "hsl(var(--border))" }}>{inner}</div>;
+              })}
+            </div>
+
+            {/* Что входит */}
+            <div className="mb-5 rounded-xl border border-primary/10 bg-primary/5 p-4">
+              <p className="mb-2 text-sm font-semibold text-primary">В комплекте с камерой:</p>
+              <div className="grid grid-cols-2 gap-1">
+                {INCLUDED.map((f) => (
+                  <div key={f} className="flex items-center gap-1.5 text-xs text-foreground/80">
+                    <CheckCircle className="h-3.5 w-3.5 shrink-0 text-green-500" /> {f}
                   </div>
                 ))}
               </div>
+            </div>
 
-              {/* Теги */}
-              <div className="flex flex-wrap gap-2 mb-5">
-                {['Надёжное оборудование', 'Установка под ключ', 'Поддержка и консультация'].map(a => (
-                  <span key={a} className="text-xs font-medium px-3 py-1.5 rounded-full border border-blue-100 text-blue-700 bg-blue-50">
-                    {a}
-                  </span>
-                ))}
-              </div>
+            <CTA guarantee="1 ГОД гарантии на камеры и работы" />
+          </div>
+        </div>
 
-              {/* Гарантия + CTA */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-5 border-t border-gray-100">
-                <div className="flex items-center gap-2 flex-1">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg,#0057B8,#0099ff)' }}>
-                    <CheckCircle size={16} className="text-white" />
-                  </div>
-                  <p className="text-xs font-semibold text-gray-700">1 ГОД гарантии на камеры и работы</p>
-                </div>
-                <CallButtons gradient="linear-gradient(135deg,#0057B8,#0099ff)" />
-              </div>
+        {/* АКЦИЯ 2: Комплект TVT под ключ */}
+        <div className="rounded-3xl overflow-hidden border bg-white shadow-sm" style={{ borderColor: "hsl(var(--border))" }}>
+          <div className="flex items-center gap-4 px-6 py-5"
+            style={{ background: "linear-gradient(135deg,#003d8f,#0057B8)" }}>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20">
+              <Camera className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <span className="mb-1 inline-block rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                АКЦИЯ
+              </span>
+              <h2 className="text-lg font-bold leading-tight text-white">Видеонаблюдение под ключ</h2>
+              <p className="text-xs text-white/70">4МР качество · TVT · NVR + PoE · 4 камеры</p>
             </div>
           </div>
 
+          <div className="p-6">
+            {/* Фото камер */}
+            <div className="mb-6 grid grid-cols-2 gap-4">
+              {TVT_CAMERAS.map((cam) => (
+                <div key={cam.name} className="rounded-2xl border p-4 text-center" style={{ borderColor: "hsl(var(--border))" }}>
+                  <div className="relative mx-auto mb-3 h-28 w-28 overflow-hidden rounded-xl bg-secondary flex items-center justify-center">
+                    {cam.img
+                      ? <Image src={cam.img} alt={cam.name} fill className="object-contain p-2" unoptimized />
+                      : <Camera className="h-10 w-10 text-muted-foreground/40" />}
+                  </div>
+                  <p className="font-bold text-sm">{cam.name}</p>
+                  <p className="mb-2 text-xs text-muted-foreground">{cam.type}</p>
+                  <ul className="inline-block space-y-0.5 text-left">
+                    {cam.specs.map((s) => (
+                      <li key={s} className="flex items-center gap-1 text-xs text-foreground/70">
+                        <CheckCircle className="h-3 w-3 shrink-0 text-green-500" /> {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            {/* Пакеты */}
+            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {TVT_PACKAGES.map((pkg) => (
+                <div key={pkg.label} className="rounded-2xl p-5 text-center text-white"
+                  style={{ background: "linear-gradient(135deg,#003d8f,#0077e6)" }}>
+                  <p className="mb-1 text-sm font-bold">{pkg.label}</p>
+                  <p className="mb-3 text-xs text-white/70">{pkg.note}</p>
+                  <p className="text-4xl font-black">{pkg.price.toLocaleString("ru")}</p>
+                  <p className="text-sm text-white/80">сом · с установкой</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Включено */}
+            <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {TVT_FEATURES.map((f) => (
+                <div key={f} className="flex items-center gap-2 text-sm text-foreground/80">
+                  <CheckCircle className="h-4 w-4 shrink-0 text-green-500" /> {f}
+                </div>
+              ))}
+            </div>
+
+            <CTA guarantee="2 ГОДА гарантии на камеры и работы" />
+          </div>
         </div>
 
-        {/* Контакты снизу */}
-        <div className="mt-8 rounded-2xl p-6 text-center" style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
-          <p className="text-white font-bold text-lg mb-1">Пишите или звоните!</p>
-          <p className="text-white/70 text-sm mb-4">С радостью ответим на ваши вопросы</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="tel:+996704443333" className="flex items-center gap-2 text-white font-bold hover:text-amber-300 transition-colors">
-              <Phone size={16} /> 0704 44 33 33
+        {/* Контакты */}
+        <div className="rounded-2xl p-6 text-center"
+          style={{ background: "linear-gradient(135deg,#003d8f,#0077e6)" }}>
+          <p className="text-lg font-bold text-white mb-1">Пишите или звоните!</p>
+          <p className="text-sm text-white/70 mb-4">С радостью ответим на ваши вопросы</p>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a href="tel:+996704443333" className="flex items-center gap-2 font-bold text-white hover:text-yellow-300 transition-colors">
+              <Phone className="h-4 w-4" /> 0704 44 33 33
             </a>
-            <span className="hidden sm:block text-white/30">|</span>
-            <a href="tel:+996553413333" className="flex items-center gap-2 text-white font-bold hover:text-amber-300 transition-colors">
-              <Phone size={16} /> 0553 41 33 33
+            <span className="hidden text-white/30 sm:block">|</span>
+            <a href="tel:+996553413333" className="flex items-center gap-2 font-bold text-white hover:text-yellow-300 transition-colors">
+              <Phone className="h-4 w-4" /> 0553 41 33 33
             </a>
           </div>
         </div>

@@ -1,116 +1,101 @@
-'use client';
-import { useState, Suspense } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff } from 'lucide-react';
-import { register, getMe } from '@/lib/api';
-import { useAuthStore } from '@/store/auth';
+"use client";
 
-function RegisterForm() {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
-  const { setAuth } = useAuthStore();
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, User, Mail, Lock, Phone } from "lucide-react";
+import { register } from "@/lib/api";
+import { useAuthStore } from "@/store/auth";
+
+export default function RegisterPage() {
   const router = useRouter();
-  const params = useSearchParams();
-  const redirect = params.get('redirect') || '/';
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [showPwd, setShowPwd] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(f => ({ ...f, [key]: e.target.value }));
+  const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    if (form.password.length < 6) { setError('Пароль должен быть не менее 6 символов'); return; }
+    setError("");
+    if (form.password.length < 6) { setError("Пароль минимум 6 символов"); return; }
     setLoading(true);
     try {
-      const { access_token } = await register(form);
-      localStorage.setItem('token', access_token);
-      const user = await getMe();
-      setAuth(user, access_token);
-      router.push(redirect);
+      const data = await register(form);
+      setAuth(data.user, data.token);
+      router.push("/");
     } catch (err: any) {
-      const msg = err.response?.data?.message ?? '';
-      const text = Array.isArray(msg) ? msg.join(' ') : msg;
-      setError(text || 'Ошибка регистрации. Попробуйте ещё раз.');
-    } finally {
-      setLoading(false);
+      setError(err?.response?.data?.message || "Ошибка регистрации. Попробуйте другой email.");
     }
+    setLoading(false);
   };
 
-  const fields = [
-    { label: 'Имя',     key: 'name',     type: 'text',     placeholder: 'Иван Иванов' },
-    { label: 'Email',   key: 'email',    type: 'email',    placeholder: 'your@email.com' },
-    { label: 'Телефон', key: 'phone',    type: 'tel',      placeholder: '+996 500 000 000', optional: true },
-  ];
-
-  return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 bg-gray-50">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-md">
-
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-          style={{ background: 'linear-gradient(135deg, #003d8f, #0077e6)' }}>
-          <span className="text-white text-xl font-black">T</span>
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Регистрация</h1>
-        <p className="text-gray-400 text-sm mb-6">Создайте аккаунт для покупок</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map(({ label, key, type, placeholder, optional }) => (
-            <div key={key}>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                {label} {optional && <span className="text-gray-400 font-normal">(необязательно)</span>}
-              </label>
-              <input
-                type={type} value={form[key as keyof typeof form]}
-                onChange={set(key)} required={!optional} placeholder={placeholder}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 bg-gray-50 transition-all"
-              />
-            </div>
-          ))}
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1.5">Пароль</label>
-            <div className="relative">
-              <input
-                type={showPass ? 'text' : 'password'} value={form.password}
-                onChange={set('password')} required placeholder="Минимум 6 символов"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 bg-gray-50 transition-all"
-              />
-              <button type="button" onClick={() => setShowPass(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {showPass ? <EyeOff size={17} /> : <Eye size={17} />}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
-          <button type="submit" disabled={loading}
-            className="w-full text-white font-semibold py-3.5 rounded-xl transition-opacity hover:opacity-90 disabled:opacity-60"
-            style={{ background: 'linear-gradient(135deg, #003d8f, #0077e6)' }}>
-            {loading ? 'Создаём аккаунт...' : 'Создать аккаунт'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-400 mt-5">
-          Уже есть аккаунт?{' '}
-          <Link href={`/login${redirect !== '/' ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
-            className="font-medium hover:underline" style={{ color: '#0057B8' }}>
-            Войти
-          </Link>
-        </p>
+  const field = (
+    icon: React.ReactNode,
+    label: string,
+    key: keyof typeof form,
+    type = "text",
+    placeholder = "",
+    extra?: React.ReactNode
+  ) => (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium">{label}</label>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{icon}</span>
+        <input
+          type={key === "password" ? (showPwd ? "text" : "password") : type}
+          value={form[key]}
+          onChange={update(key)}
+          required={key !== "phone"}
+          placeholder={placeholder}
+          className="h-11 w-full rounded-xl border bg-secondary pl-10 pr-10 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+          style={{ borderColor: "hsl(var(--border))" }}
+        />
+        {extra && <span className="absolute right-3 top-1/2 -translate-y-1/2">{extra}</span>}
       </div>
     </div>
   );
-}
 
-export default function RegisterPage() {
-  return <Suspense><RegisterForm /></Suspense>;
+  return (
+    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-12">
+      <div className="w-full rounded-2xl border bg-white p-8 shadow-sm" style={{ borderColor: "hsl(var(--border))" }}>
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground text-lg font-black">T</div>
+          <h1 className="text-2xl font-extrabold">Создать аккаунт</h1>
+          <p className="mt-1 text-sm text-muted-foreground">TECHNICS · Системы безопасности</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
+          {field(<User className="h-4 w-4" />, "Имя", "name", "text", "Ваше имя")}
+          {field(<Mail className="h-4 w-4" />, "Email", "email", "email", "your@email.com")}
+          {field(<Phone className="h-4 w-4" />, "Телефон (необязательно)", "phone", "tel", "+996 XXX XXX XXX")}
+          {field(
+            <Lock className="h-4 w-4" />,
+            "Пароль",
+            "password",
+            "password",
+            "Минимум 6 символов",
+            <button type="button" onClick={() => setShowPwd((v) => !v)} className="text-muted-foreground">
+              {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+          >
+            {loading ? "Регистрируем..." : "Зарегистрироваться"}
+          </button>
+          <p className="text-center text-sm text-muted-foreground">
+            Уже есть аккаунт?{" "}
+            <Link href="/login" className="font-semibold text-primary hover:underline">Войти</Link>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
 }

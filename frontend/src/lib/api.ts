@@ -19,6 +19,9 @@ export const getProduct = (slug: string) =>
 export const getFeatured = () =>
   api.get('/products/featured').then((r) => r.data);
 
+export const getHits = () =>
+  api.get('/products/hits').then((r) => r.data);
+
 export const getCategories = () =>
   api.get('/categories').then((r) => r.data);
 
@@ -77,6 +80,17 @@ export const adminUpdateProduct = (id: number, data: Record<string, any>) =>
 export const adminDeleteProduct = (id: number) =>
   api.delete(`/products/${id}`).then((r) => r.data);
 
+export const adminFetchProductImage = (id: number, imageUrl?: string) =>
+  api.post(`/products/admin/${id}/fetch-image`, imageUrl ? { url: imageUrl } : {}).then((r) => r.data);
+
+export const getCloudinaryParams = () =>
+  api.get('/upload/cloudinary-params').then((r) => r.data as {
+    signature: string; timestamp: number; cloudName: string; apiKey: string; folder: string;
+  });
+
+export const adminSaveProductImageUrl = (id: number, url: string) =>
+  api.post(`/products/admin/${id}/images-by-url`, { url, isMain: false }).then((r) => r.data);
+
 // Admin — brands
 export const adminCreateBrand = (data: Record<string, any>) =>
   api.post('/products/brands', data).then((r) => r.data);
@@ -106,6 +120,60 @@ export const updateProfile = (data: { name?: string; phone?: string }) =>
 
 export const changePassword = (oldPassword: string, newPassword: string) =>
   api.patch('/auth/password', { oldPassword, newPassword }).then((r) => r.data);
+
+// Banners
+export const getBanners = () =>
+  api.get('/banners').then((r) => r.data);
+
+export const adminGetBanners = () =>
+  api.get('/banners/admin').then((r) => r.data);
+
+export const adminCreateBanner = (data: Record<string, any>) =>
+  api.post('/banners/admin', data).then((r) => r.data);
+
+export const adminUpdateBanner = (id: number, data: Record<string, any>) =>
+  api.put(`/banners/admin/${id}`, data).then((r) => r.data);
+
+export const adminDeleteBanner = (id: number) =>
+  api.delete(`/banners/admin/${id}`).then((r) => r.data);
+
+export const adminToggleBanner = (id: number) =>
+  api.put(`/banners/admin/${id}/toggle`).then((r) => r.data);
+
+// Settings
+export const getSettings = () =>
+  api.get('/settings').then((r) => r.data as Record<string, string>);
+
+export const adminUpdateSettings = (data: Record<string, string>) =>
+  api.post('/settings/admin', data).then((r) => r.data);
+
+// Contact messages
+export const sendMessage = (data: { name: string; phone: string; message?: string }) =>
+  api.post('/messages', data).then((r) => r.data);
+
+export const adminGetMessages = () =>
+  api.get('/messages/admin').then((r) => r.data);
+
+export const adminMarkMessageRead = (id: number) =>
+  api.post(`/messages/admin/${id}/read`).then((r) => r.data);
+
+export const adminDeleteMessage = (id: number) =>
+  api.delete(`/messages/admin/${id}`).then((r) => r.data);
+
+export const adminGetUnreadCount = () =>
+  api.get('/messages/admin/unread-count').then((r) => r.data as { count: number });
+
+export const getMessageStatus = (id: number) =>
+  api.get(`/messages/${id}/status`).then((r) => r.data);
+
+export const adminReplyMessage = (id: number, reply: string) =>
+  api.post(`/messages/admin/${id}/reply`, { reply }).then((r) => r.data);
+
+// Products by tag
+export const getProductsByTag = (tag: 'new' | 'hit') => {
+  const param = tag === 'hit' ? { isHit: 'true' } : { isNew: 'true' };
+  return api.get('/products', { params: { ...param, limit: 12 } }).then((r) => r.data);
+};
 
 // Reviews
 export const createReview = (data: { productId: number; rating: number; comment?: string }) =>

@@ -1,19 +1,15 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
-import {
-  getCategoriesFlat,
-  adminCreateCategory,
-  adminUpdateCategory,
-  adminDeleteCategory,
-  uploadImage,
-} from '@/lib/api';
-import { Pencil, Trash2, Plus, X, Upload, Loader2 } from 'lucide-react';
+import { getCategoriesFlat, adminCreateCategory, adminUpdateCategory, adminDeleteCategory } from '@/lib/api';
+import { Pencil, Trash2, Plus, X, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { MultiImageUpload, parseImages, serializeImages } from '@/components/MultiImageUpload';
 
-type Category = { id: number; name: string; slug: string; imageUrl?: string; parentId?: number };
+type Category = { id: number; name: string; slug: string; imageUrl?: string; parentId?: number; showInCatalog?: boolean; featured?: boolean; position?: number };
 
-const EMPTY_FORM = { name: '', slug: '', imageUrl: '', parentId: '' };
+const EMPTY_FORM = { name: '', slug: '', parentId: '', showInCatalog: true, featured: false, position: '0' };
 
 function slugify(s: string) {
   return s
@@ -31,10 +27,9 @@ export default function AdminCategoriesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [images, setImages] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -52,6 +47,7 @@ export default function AdminCategoriesPage() {
   function openCreate() {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setImages([]);
     setShowForm(true);
   }
 
@@ -60,22 +56,13 @@ export default function AdminCategoriesPage() {
     setForm({
       name: c.name,
       slug: c.slug,
-      imageUrl: c.imageUrl ?? '',
       parentId: c.parentId ? String(c.parentId) : '',
+      showInCatalog: c.showInCatalog !== false,
+      featured: c.featured ?? false,
+      position: String(c.position ?? 0),
     });
+    setImages(parseImages(c.imageUrl));
     setShowForm(true);
-  }
-
-  async function handleUpload(files: FileList | null) {
-    if (!files?.[0]) return;
-    setUploading(true);
-    try {
-      const result = await uploadImage(files[0]);
-      setForm((f) => ({ ...f, imageUrl: result.url }));
-    } catch {
-      alert('Ошибка загрузки изображения');
-    }
-    setUploading(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -85,8 +72,11 @@ export default function AdminCategoriesPage() {
       const payload = {
         name: form.name,
         slug: form.slug,
-        imageUrl: form.imageUrl || undefined,
+        imageUrl: serializeImages(images) || undefined,
         parentId: form.parentId ? parseInt(form.parentId) : null,
+        showInCatalog: form.showInCatalog,
+        featured: form.featured,
+        position: parseInt(form.position) || 0,
       };
       if (editing) {
         const updated = await adminUpdateCategory(editing.id, payload);
@@ -122,72 +112,89 @@ export default function AdminCategoriesPage() {
   const rootCats = categories.filter((c) => !c.parentId);
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="bg-gray-50 min-h-screen overflow-x-hidden">
+      <div className="max-w-5xl mx-auto px-3 xs:px-4 py-6 xs:py-8">
 
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Категории</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Категории</h1>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 text-white text-sm font-medium px-4 py-2 rounded-lg transition-opacity hover:opacity-90"
+            className="flex items-center gap-2 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-opacity hover:opacity-90 flex-shrink-0"
             style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}
           >
-            <Plus size={16} /> Добавить
+            <Plus size={16} />
+            <span className="hidden sm:inline">Добавить</span>
           </button>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+          <table className="w-full text-sm min-w-[260px]">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Фото</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Название</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Slug</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Родитель</th>
-                <th className="px-4 py-3" />
+                <th className="text-left px-2 xs:px-4 py-3 font-semibold text-gray-600">Фото</th>
+                <th className="text-left px-2 xs:px-4 py-3 font-semibold text-gray-600">Название</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Slug</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Родитель</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden lg:table-cell">Видимость</th>
+                <th className="px-2 xs:px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {categories.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-gray-400">Нет категорий</td>
+                  <td colSpan={6} className="text-center py-12 text-gray-400">Нет категорий</td>
                 </tr>
-              ) : categories.map((cat) => (
-                <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-3">
-                    {cat.imageUrl ? (
-                      <img src={cat.imageUrl} alt="" className="w-10 h-10 object-cover rounded-lg border border-gray-100" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gray-100" />
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {cat.parentId && <span className="text-gray-300 mr-1">└</span>}
-                    {cat.name}
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 font-mono text-xs">{cat.slug}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {cat.parentId ? (categories.find((c) => c.id === cat.parentId)?.name ?? '—') : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button
-                        onClick={() => openEdit(cat)}
-                        className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(cat.id)}
-                        disabled={deleting === cat.id}
-                        className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                      >
-                        {deleting === cat.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              ) : categories.map((cat) => {
+                const primary = parseImages(cat.imageUrl)[0];
+                return (
+                  <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-2 xs:px-4 py-3">
+                      {primary ? (
+                        <div className="relative w-8 h-8 2xs:w-10 2xs:h-10 rounded-lg border border-gray-100 overflow-hidden flex-shrink-0">
+                          <Image src={primary} alt="" fill className="object-cover" unoptimized />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 2xs:w-10 2xs:h-10 rounded-lg bg-gray-100 flex-shrink-0" />
+                      )}
+                    </td>
+                    <td className="px-2 xs:px-4 py-3 max-w-0 w-full">
+                      <div className="font-medium text-gray-900 truncate">
+                        {cat.parentId && <span className="text-gray-300 mr-1">└</span>}
+                        {cat.name}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 font-mono text-xs hidden sm:table-cell">{cat.slug}</td>
+                    <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                      {cat.parentId ? (categories.find((c) => c.id === cat.parentId)?.name ?? '—') : '—'}
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <div className="flex gap-1 flex-wrap">
+                        {cat.showInCatalog !== false
+                          ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">каталог</span>
+                          : <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">скрыт</span>}
+                        {cat.featured && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 font-semibold">главная</span>}
+                      </div>
+                    </td>
+                    <td className="px-2 xs:px-4 py-3">
+                      <div className="flex items-center gap-0.5 xs:gap-1 justify-end">
+                        <button
+                          onClick={() => openEdit(cat)}
+                          className="p-1.5 xs:p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(cat.id)}
+                          disabled={deleting === cat.id}
+                          className="p-1.5 xs:p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                        >
+                          {deleting === cat.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -195,7 +202,7 @@ export default function AdminCategoriesPage() {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900">
                 {editing ? 'Редактировать категорию' : 'Новая категория'}
@@ -239,21 +246,44 @@ export default function AdminCategoriesPage() {
                     ))}
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Изображение</label>
-                {form.imageUrl && (
-                  <img src={form.imageUrl} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200 mb-2" />
-                )}
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="flex items-center gap-2 text-sm text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors disabled:opacity-50"
-                >
-                  {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                  {uploading ? 'Загрузка...' : 'Загрузить фото'}
-                </button>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e.target.files)} />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Изображения <span className="font-normal text-gray-400">(первое — главное)</span>
+                </label>
+                <MultiImageUpload images={images} onChange={setImages} active={showForm} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Позиция (порядок сортировки)</label>
+                <input
+                  type="number"
+                  value={form.position}
+                  onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                  placeholder="0 — по умолчанию"
+                />
+              </div>
+
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.showInCatalog}
+                    onChange={(e) => setForm((f) => ({ ...f, showInCatalog: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-blue-600"
+                  />
+                  <span className="text-sm text-gray-700">Показывать в каталоге</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-orange-500"
+                  />
+                  <span className="text-sm text-gray-700">Показывать на главной</span>
+                </label>
               </div>
 
               <div className="flex gap-3 pt-2">

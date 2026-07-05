@@ -1,275 +1,405 @@
-'use client';
-import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Zap, Shield, Truck, Headphones } from 'lucide-react';
-import ProductCard from '@/components/ProductCard';
-import RecentlyViewed from '@/components/RecentlyViewed';
-import { getFeatured, getProducts } from '@/lib/api';
+"use client";
 
-const BANNERS = [
-  {
-    title: 'Видеонаблюдение',
-    subtitle: 'Hikvision · Dahua · EMIN',
-    desc: 'Камеры, регистраторы и готовые комплекты для любых объектов',
-    href: '/catalog?category=videokamery',
-    img: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400&q=80',
-    color: '#0057B8',
-  },
-  {
-    title: 'Ноутбуки и ПК',
-    subtitle: 'ASUS · Lenovo · HP · Dell',
-    desc: 'Лучшие цены на технику в Бишкеке. Гарантия производителя.',
-    href: '/catalog?category=noutbuki-monobloki',
-    img: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=1400&q=80',
-    color: '#7C3AED',
-  },
-  {
-    title: 'Сигнализация и охрана',
-    subtitle: 'Умный дом · GSM · Датчики',
-    desc: 'Полный спектр охранных систем и оборудования',
-    href: '/catalog?category=signalizatsiya-i-po',
-    img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=80',
-    color: '#0891B2',
-  },
-];
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight, Shield, Truck, Headphones, Award, ChevronLeft, ChevronRight, Wifi, Camera, Tag } from "lucide-react";
+import { ProductCard, ProductCardSkeleton } from "@/components/product/product-card";
+import { getProducts, getCategories, getBanners } from "@/lib/api";
+import type { Product, Category, Banner } from "@/types";
 
+/* ── helpers ── */
+function parseImages(raw: string): string[] {
+  if (!raw) return [];
+  const t = raw.trimStart();
+  if (t.startsWith("[")) {
+    try { return (JSON.parse(t) as string[]).filter(Boolean); } catch {}
+  }
+  return [raw];
+}
 
-const ADVANTAGES = [
-  { icon: Truck,      title: 'Быстрая доставка', desc: 'По всему Бишкеку за 1–2 дня' },
-  { icon: Shield,     title: 'Официальная гарантия', desc: 'На всё оборудование' },
-  { icon: Zap,        title: 'Лучшие цены',      desc: 'Честные цены без наценок' },
-  { icon: Headphones, title: 'Поддержка 24/7',   desc: 'Всегда на связи в WhatsApp' },
-];
+type OverlayConfig = { containerBg: string; imgOpacity: number; gradient: string };
 
-export default function HomePage() {
-  const [popular, setPopular]   = useState<any[]>([]);
-  const [newItems, setNewItems] = useState<any[]>([]);
-  const [slide, setSlide]       = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const hitsRef     = useRef<HTMLDivElement>(null);
-  const slideTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
+function getOverlay(style?: string): OverlayConfig {
+  switch (style) {
+    case "none":
+      return { containerBg: "#000", imgOpacity: 1, gradient: "" };
+    case "dark":
+      return { containerBg: "#000", imgOpacity: 1, gradient: "linear-gradient(to right,rgba(0,0,0,0.6),rgba(0,0,0,0.2),transparent)" };
+    case "dark-dim":
+      return { containerBg: "#000", imgOpacity: 0.5, gradient: "linear-gradient(to right,rgba(0,0,0,0.85),rgba(0,0,0,0.4))" };
+    case "blue":
+      return { containerBg: "hsl(221,100%,28%)", imgOpacity: 0.5, gradient: "linear-gradient(to right,hsl(221deg 100% 28%/.9),transparent)" };
+    default:
+      return { containerBg: "#000", imgOpacity: 1, gradient: "" };
+  }
+}
+
+/* ── Hero Slider ── */
+function HeroSlider({ banners }: { banners: Banner[] }) {
+  const [idx, setIdx] = useState(0);
+  const [imgIdx, setImgIdx] = useState(0);
+
+  // Reset sub-image when banner changes
+  useEffect(() => { setImgIdx(0); }, [idx]);
 
   useEffect(() => {
-    getFeatured().then(setPopular).catch(() => {});
-    getProducts({ page: 1 }).then((r: any) => setNewItems(r.items ?? [])).catch(() => {});
-  }, []);
+    if (banners.length < 2) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % banners.length), 5000);
+    return () => clearInterval(t);
+  }, [banners.length]);
 
-  // Auto-advance banner
-  useEffect(() => {
-    slideTimer.current = setInterval(() => setSlide(s => (s + 1) % BANNERS.length), 4500);
-    return () => { if (slideTimer.current) clearInterval(slideTimer.current); };
-  }, []);
+  if (!banners.length) {
+    return (
+      <div className="relative flex h-[300px] items-center overflow-hidden rounded-2xl bg-primary sm:h-[400px] lg:h-[480px]">
+        <div className="relative z-10 max-w-2xl px-8 sm:px-12">
+          <div className="mb-4 inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white">
+            Системы безопасности
+          </div>
+          <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
+            Видеонаблюдение<br />и IP-камеры
+          </h1>
+          <p className="mt-4 text-white/80 sm:text-lg">
+            846 товаров от ведущих производителей. Установка под ключ.
+          </p>
+          <Link
+            href="/catalog"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary transition-transform hover:scale-105"
+          >
+            Перейти в каталог <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: "radial-gradient(circle at 75% 50%, white 0%, transparent 60%)" }} />
+      </div>
+    );
+  }
 
-  const goSlide = (i: number) => {
-    setSlide(i);
-    if (slideTimer.current) clearInterval(slideTimer.current);
-    slideTimer.current = setInterval(() => setSlide(s => (s + 1) % BANNERS.length), 4500);
-  };
-
-  const scrollCarousel = (dir: 'prev' | 'next') => {
-    const el = carouselRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir === 'next' ? 220 : -220, behavior: 'smooth' });
-  };
-
-  const banner = BANNERS[slide];
+  const b = banners[idx];
+  const imgs = parseImages(b.image);
+  const currentImg = imgs[Math.min(imgIdx, imgs.length - 1)] ?? "";
+  const overlay = getOverlay(b.overlayStyle);
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-
-      {/* ── Hero Banner ── */}
-      <section className="relative w-full overflow-hidden" style={{ height: 'clamp(260px, 42vw, 480px)' }}>
-        {BANNERS.map((b, i) => (
-          <div
-            key={i}
-            className="absolute inset-0 transition-opacity duration-700"
-            style={{ opacity: i === slide ? 1 : 0, pointerEvents: i === slide ? 'auto' : 'none' }}
-          >
-            <img src={b.img} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.3) 55%,transparent 100%)' }} />
-          </div>
-        ))}
-
-        {/* Text overlay */}
-        <div className="relative z-10 h-full flex flex-col justify-center px-8 md:px-16 max-w-3xl">
-          <span className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-4 w-fit text-white uppercase tracking-widest"
-            style={{ background: banner.color }}>
-            {banner.subtitle}
-          </span>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3 leading-tight drop-shadow-lg">
-            {banner.title}
-          </h1>
-          <p className="text-white/70 text-sm md:text-base mb-7 max-w-sm leading-relaxed">
-            {banner.desc}
-          </p>
-          <Link href={banner.href}
-            className="inline-flex items-center gap-2 text-white font-bold px-7 py-3 rounded-full text-sm transition-all hover:opacity-90 hover:gap-3 w-fit shadow-lg"
-            style={{ background: banner.color }}>
-            Смотреть товары <ChevronRight size={16} />
+    <div className="relative h-[300px] overflow-hidden rounded-2xl sm:h-[400px] lg:h-[480px]"
+      style={{ background: overlay.containerBg }}>
+      {currentImg && (
+        <Image src={currentImg} alt={b.title} fill className="object-cover transition-opacity duration-300"
+          style={{ opacity: overlay.imgOpacity }} unoptimized />
+      )}
+      {overlay.gradient && (
+        <div className="absolute inset-0" style={{ background: overlay.gradient }} />
+      )}
+      <div className="relative z-10 flex h-full max-w-2xl flex-col justify-center px-8 sm:px-12">
+        <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">{b.title}</h2>
+        {b.subtitle && <p className="mt-4 text-white/80 sm:text-lg">{b.subtitle}</p>}
+        {b.buttonText && b.buttonUrl && (
+          <Link href={b.buttonUrl} className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary hover:scale-105 transition-transform">
+            {b.buttonText} <ArrowRight className="h-4 w-4" />
           </Link>
-        </div>
+        )}
+      </div>
 
-        {/* Arrows */}
-        <button onClick={() => goSlide((slide - 1 + BANNERS.length) % BANNERS.length)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
-          <ChevronLeft size={20} />
-        </button>
-        <button onClick={() => goSlide((slide + 1) % BANNERS.length)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
-          <ChevronRight size={20} />
-        </button>
-
-        {/* Dots */}
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-          {BANNERS.map((_, i) => (
-            <button key={i} onClick={() => goSlide(i)}
-              className={`rounded-full transition-all duration-300 ${i === slide ? 'w-7 h-2 bg-white' : 'w-2 h-2 bg-white/40 hover:bg-white/70'}`} />
+      {/* Thumbnails strip — visible only when this banner has multiple images */}
+      {imgs.length > 1 && (
+        <div className="absolute bottom-4 right-14 z-20 flex gap-1.5">
+          {imgs.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setImgIdx(i)}
+              className={`relative h-10 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                i === imgIdx ? "border-white shadow-lg scale-105" : "border-white/30 opacity-50 hover:opacity-90"
+              }`}
+            >
+              <Image src={img} alt="" fill className="object-cover" unoptimized />
+            </button>
           ))}
         </div>
-      </section>
-
-      {/* ── Advantages ── */}
-      <section className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-gray-100">
-          {ADVANTAGES.map(adv => (
-            <div key={adv.title} className="flex items-center gap-3 px-5 py-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
-                <adv.icon size={17} className="text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-800">{adv.title}</p>
-                <p className="text-[11px] text-gray-400">{adv.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-
-      {/* ── Promo banner ── */}
-      <section className="max-w-7xl mx-auto px-4 pt-7">
-        <Link href="/aktsii"
-          className="flex items-center justify-between gap-4 rounded-2xl px-6 py-5 transition-opacity hover:opacity-95 group"
-          style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
-          <div>
-            <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-red-500 text-white px-2 py-0.5 rounded-full mb-2">
-              Акция
-            </span>
-            <p className="text-white font-bold text-lg leading-tight">Комбо-предложения с установкой</p>
-            <p className="text-white/70 text-sm mt-0.5">Wi-Fi камеры, видеонаблюдение под ключ — выгодные комплекты</p>
-          </div>
-          <div className="flex-shrink-0 flex items-center gap-2 bg-white/20 text-white text-sm font-bold px-4 py-2.5 rounded-xl group-hover:bg-white/30 transition-colors whitespace-nowrap">
-            Смотреть <ChevronRight size={16} />
-          </div>
-        </Link>
-      </section>
-
-      {/* ── Popular now ── */}
-      {popular.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-7">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
-              <span className="w-1 h-5 rounded-full inline-block" style={{ background: 'linear-gradient(to bottom,#003d8f,#0077e6)' }} />
-              Популярное сейчас
-            </h2>
-            <div className="flex gap-2">
-              <button onClick={() => scrollCarousel('prev')}
-                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
-                <ChevronLeft size={18} />
-              </button>
-              <button onClick={() => scrollCarousel('next')}
-                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors">
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-          <div ref={carouselRef} className="flex gap-3 overflow-x-auto pb-2 snap-x" style={{ scrollbarWidth: 'none' }}>
-            {popular.map(p => (
-              <div key={p.id} className="w-[200px] flex-shrink-0 snap-start">
-                <ProductCard product={p} />
-              </div>
-            ))}
-          </div>
-        </section>
       )}
 
-      {/* ── New items ── */}
-      <section className="max-w-7xl mx-auto px-4 pb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
-            <span className="w-1 h-5 rounded-full inline-block" style={{ background: 'linear-gradient(to bottom,#003d8f,#0077e6)' }} />
-            Новинки
-          </h2>
-          <Link href="/catalog" className="text-sm font-medium flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: '#0057B8' }}>
-            Все товары <ChevronRight size={14} />
-          </Link>
-        </div>
-        {newItems.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {newItems.slice(0, 10).map(p => <ProductCard key={p.id} product={p} />)}
-          </div>
-        ) : (
-          <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-xl bg-white">
-            <p className="text-sm">Товары пока не добавлены</p>
-          </div>
-        )}
-      </section>
-
-      <RecentlyViewed />
-
-      {/* ── Why us ── */}
-      <section className="max-w-7xl mx-auto px-4 pb-10">
-        <div className="rounded-3xl p-8 md:p-10" style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-7">Почему выбирают нас</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { icon: Truck,      title: 'Быстрая доставка',    desc: 'Доставим по Бишкеку в день заказа и отправим в регионы.' },
-              { icon: Shield,     title: 'Гарантия качества',   desc: 'Официальная гарантия производителя на всю продукцию.' },
-              { icon: Zap,        title: 'Официальные товары',  desc: 'Только сертифицированная и оригинальная техника.' },
-              { icon: Headphones, title: 'Поддержка клиентов',  desc: 'Консультация и помощь 24/7 через WhatsApp и Telegram.' },
-            ].map(item => (
-              <div key={item.title} className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.15)' }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.2)' }}>
-                  <item.icon size={20} className="text-white" />
-                </div>
-                <p className="font-bold text-white text-base mb-1.5">{item.title}</p>
-                <p className="text-white/75 text-sm leading-relaxed">{item.desc}</p>
-              </div>
+      {banners.length > 1 && (
+        <>
+          <button onClick={() => setIdx((i) => (i - 1 + banners.length) % banners.length)}
+            className="absolute left-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur hover:bg-white/30">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button onClick={() => setIdx((i) => (i + 1) % banners.length)}
+            className="absolute right-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur hover:bg-white/30">
+            <ChevronRight className="h-5 w-5" />
+          </button>
+          <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 flex gap-1.5">
+            {banners.map((_, i) => (
+              <button key={i} onClick={() => setIdx(i)}
+                className={`h-1.5 rounded-full transition-all ${i === idx ? "w-6 bg-white" : "w-1.5 bg-white/50"}`} />
             ))}
           </div>
-        </div>
-      </section>
+        </>
+      )}
+    </div>
+  );
+}
 
-      {/* ── Хиты продаж ── */}
-      {newItems.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 pb-10">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Хиты продаж</h2>
-              <p className="text-sm text-gray-400 mt-0.5">Чаще всего покупают</p>
+/* ── Advantages ── */
+const ADVANTAGES = [
+  { icon: Shield, title: "Гарантия качества", desc: "Официальные поставщики" },
+  { icon: Truck, title: "Быстрая доставка", desc: "По Бишкеку и регионам" },
+  { icon: Headphones, title: "Поддержка 24/7", desc: "Консультация специалиста" },
+  { icon: Award, title: "Монтаж под ключ", desc: "Профессиональная установка" },
+];
+
+/* ── Categories Grid ── */
+function CategoriesSection({ categories }: { categories: Category[] }) {
+  const featured = categories.filter((c) => c.featured).slice(0, 8);
+  if (!featured.length) return null;
+  return (
+    <section>
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-xl font-extrabold sm:text-2xl">Категории</h2>
+        <Link href="/catalog" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+          Все <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 min-[450px]:grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        {featured.map((cat) => (
+          <Link
+            key={cat.id}
+            href={`/catalog?category=${cat.slug}`}
+            className="flex flex-col items-center gap-2 rounded-xl border bg-white p-3 text-center transition-all hover:border-primary/40 hover:shadow-sm"
+            style={{ borderColor: "hsl(var(--border))" }}
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <span className="text-xl">📷</span>
             </div>
-            <Link href="/catalog" className="text-sm font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: '#E53E3E' }}>
-              Смотреть все <ChevronRight size={14} />
-            </Link>
-          </div>
-          <div className="relative">
-            <div ref={hitsRef} className="flex gap-4 overflow-x-auto pb-2 snap-x" style={{ scrollbarWidth: 'none' }}>
-              {newItems.slice(0, 8).map(p => (
-                <div key={p.id} className="w-[200px] flex-shrink-0 snap-start">
-                  <ProductCard product={p} />
+            <span className="text-xs font-medium leading-tight text-foreground line-clamp-2">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Promo Section (preview) ── */
+const PROMO_ITEMS = [
+  {
+    gradient: "linear-gradient(135deg,#0057B8,#0077e6)",
+    icon: "wifi",
+    label: "АКЦИЯ",
+    title: "Wi-Fi камеры EZVIZ",
+    subtitle: "Без прокладки кабеля · с установкой",
+    imgs: [
+      "https://emin.kg/files/9b29d4867b37401aae450b8c46fbb829",
+      "https://emin.kg/files/9108eb5fc94d46f99b18d5f79aed7f2e",
+      "https://emin.kg/files/1153f9859209440296d7b7c12a59aa33",
+      "",
+    ],
+    price: "от 2 350 сом",
+  },
+  {
+    gradient: "linear-gradient(135deg,#003d8f,#0057B8)",
+    icon: "camera",
+    label: "АКЦИЯ",
+    title: "Видеонаблюдение под ключ",
+    subtitle: "4МР · TVT · NVR + PoE · 4 камеры",
+    imgs: [
+      "",
+      "",
+    ],
+    price: "от 21 900 сом",
+  },
+];
+
+function PromoSection() {
+  return (
+    <section>
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Tag className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-extrabold sm:text-2xl">Акции</h2>
+        </div>
+        <Link href="/aktsii" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+          Все акции <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {PROMO_ITEMS.map((item) => (
+          <Link key={item.title} href="/aktsii"
+            className="group overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md"
+            style={{ borderColor: "hsl(var(--border))" }}>
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 py-4" style={{ background: item.gradient }}>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                {item.icon === "wifi"
+                  ? <Wifi className="h-5 w-5 text-white" />
+                  : <Camera className="h-5 w-5 text-white" />}
+              </div>
+              <div>
+                <span className="mb-0.5 inline-block rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                  {item.label}
+                </span>
+                <p className="text-sm font-bold leading-tight text-white">{item.title}</p>
+                <p className="text-[11px] text-white/70">{item.subtitle}</p>
+              </div>
+            </div>
+            {/* Images row */}
+            <div className="flex gap-2 px-4 py-3">
+              {item.imgs.map((src, i) => (
+                <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl bg-secondary shrink-0 flex items-center justify-center">
+                  {src
+                    ? <Image src={src} alt="" fill className="object-contain p-1" unoptimized />
+                    : <Camera className="h-7 w-7 text-muted-foreground/30" />}
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => hitsRef.current?.scrollBy({ left: 220, behavior: 'smooth' })}
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-colors z-10"
-            >
-              <ChevronRight size={18} />
-            </button>
+            {/* Price */}
+            <div className="flex items-center justify-between border-t px-4 py-3" style={{ borderColor: "hsl(var(--border))" }}>
+              <span className="text-sm font-black text-primary">{item.price}</span>
+              <span className="flex items-center gap-1 text-xs font-medium text-primary group-hover:underline">
+                Подробнее <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Product Slider ── */
+const CARD_W = 220;
+const GAP = 16;
+
+function ProductSection({ title, products, loading, startDelay = 0 }: { title: string; products: Product[]; loading?: boolean; startDelay?: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(5);
+
+  // считаем сколько целых карточек помещается в контейнер
+  useEffect(() => {
+    const update = () => {
+      if (!wrapRef.current) return;
+      const w = wrapRef.current.offsetWidth;
+      setVisible(Math.max(1, Math.floor((w + GAP) / (CARD_W + GAP))));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    if (wrapRef.current) ro.observe(wrapRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const total = loading ? 0 : products.length;
+  const maxIdx = Math.max(0, total - visible);
+
+  const goTo = (i: number) => setIdx(Math.max(0, Math.min(i, maxIdx)));
+
+  // авто-прокрутка каждые 3 секунды, со своим стартовым сдвигом
+  useEffect(() => {
+    if (loading || total < 2) return;
+    let interval: ReturnType<typeof setInterval>;
+    const timeout = setTimeout(() => {
+      interval = setInterval(() => {
+        setIdx((prev) => (prev >= maxIdx ? 0 : prev + 1));
+      }, 3000);
+    }, startDelay);
+    return () => { clearTimeout(timeout); clearInterval(interval); };
+  }, [loading, total, maxIdx, startDelay]);
+
+  const offset = idx * (CARD_W + GAP);
+
+  return (
+    <section>
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-xl font-extrabold sm:text-2xl">{title}</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => goTo(idx - 1)}
+            disabled={idx === 0}
+            className="flex h-8 w-8 items-center justify-center rounded-full border transition-colors hover:bg-secondary disabled:opacity-30"
+            style={{ borderColor: "hsl(var(--border))" }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => goTo(idx + 1)}
+            disabled={idx >= maxIdx}
+            className="flex h-8 w-8 items-center justify-center rounded-full border transition-colors hover:bg-secondary disabled:opacity-30"
+            style={{ borderColor: "hsl(var(--border))" }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <Link href="/catalog" className="ml-1 flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+            Все <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+
+      {/* overflow:hidden обрезает по границе, transform двигает точно на CARD_W+GAP */}
+      <div ref={wrapRef} className="overflow-hidden">
+        <div
+          className="flex gap-4 transition-transform duration-500 ease-in-out pb-2"
+          style={{ transform: `translateX(-${offset}px)` }}
+        >
+          {loading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="w-[220px] shrink-0"><ProductCardSkeleton /></div>
+              ))
+            : products.map((p) => (
+                <div key={p.id} className="w-[220px] shrink-0">
+                  <ProductCard product={p} />
+                </div>
+              ))
+          }
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Home Page ── */
+export default function HomePage() {
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [hits, setHits] = useState<Product[]>([]);
+  const [newProds, setNewProds] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getBanners().then(setBanners).catch(() => {});
+    getCategories().then(setCategories).catch(() => {});
+    Promise.all([
+      getProducts({ isHit: 'true', limit: 10 }),
+      getProducts({ isNew: 'true', limit: 10 }),
+    ]).then(([h, n]) => {
+      setHits(h?.items ?? h ?? []);
+      setNewProds(n?.items ?? n ?? []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-12 px-4 py-6">
+      <HeroSlider banners={banners} />
+
+      <section className="grid grid-cols-1 min-[450px]:grid-cols-2 gap-3 lg:grid-cols-4">
+        {ADVANTAGES.map((a) => (
+          <div key={a.title} className="flex items-center gap-3 rounded-xl border bg-white p-3.5" style={{ borderColor: "hsl(var(--border))" }}>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <a.icon className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold">{a.title}</div>
+              <div className="text-xs text-muted-foreground">{a.desc}</div>
+            </div>
           </div>
-        </section>
-      )}
+        ))}
+      </section>
+
+      <CategoriesSection categories={categories} />
+
+      <PromoSection />
+
+      <ProductSection title="Хиты продаж" products={hits} loading={loading} startDelay={0} />
+
+      <ProductSection title="Новинки" products={newProds} loading={loading} startDelay={1500} />
     </div>
   );
 }

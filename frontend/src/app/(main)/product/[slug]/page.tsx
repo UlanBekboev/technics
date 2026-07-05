@@ -1,471 +1,276 @@
-'use client';
-import { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ShoppingCart, Star, Check, Phone, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getProduct, getFeatured, getProducts, addToCart, createReview, deleteReview } from '@/lib/api';
-import { useCartStore } from '@/store/cart';
-import { useAuthStore } from '@/store/auth';
-import Link from 'next/link';
-import ProductCard from '@/components/ProductCard';
+"use client";
 
-const PHONES = ['+996 700 916 121', '+996 551 916 122'];
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { ShoppingCart, Heart, Camera, Star, ChevronRight, Check } from "lucide-react";
+import { getProduct, addToCart as apiAddToCart, toggleFavorite as apiToggleFavorite } from "@/lib/api";
+import { useCartStore } from "@/store/cart";
+import { useFavoritesStore } from "@/store/favorites";
+import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/format";
+import type { Product } from "@/types";
 
-function ProductCarousel({ title, items }: { title: string; items: any[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [idx, setIdx] = useState(0);
+function Gallery({ images }: { images: { url: string; isMain: boolean }[] }) {
+  const [active, setActive] = useState(0);
+  const imgs = images.length > 0 ? images : [];
 
-  useEffect(() => {
-    if (items.length === 0) return;
-    const t = setInterval(() => {
-      const el = ref.current;
-      if (!el) return;
-      const max = el.scrollWidth - el.clientWidth;
-      if (el.scrollLeft >= max - 10) {
-        el.scrollTo({ left: 0, behavior: 'smooth' });
-        setIdx(0);
-      } else {
-        el.scrollBy({ left: 220, behavior: 'smooth' });
-        setIdx((i) => i + 1);
-      }
-    }, 3000);
-    return () => clearInterval(t);
-  }, [items]);
-
-  const scroll = (dir: 'prev' | 'next') => {
-    ref.current?.scrollBy({ left: dir === 'next' ? 220 : -220, behavior: 'smooth' });
-  };
-
-  if (items.length === 0) return null;
+  if (!imgs.length) {
+    return (
+      <div className="aspect-square w-full flex items-center justify-center rounded-2xl bg-secondary">
+        <Camera className="h-20 w-20 text-muted-foreground/30" />
+      </div>
+    );
+  }
 
   return (
-    <section className="mt-10">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-          <span className="w-1 h-5 rounded-full inline-block" style={{ background: 'linear-gradient(to bottom, #003d8f, #0077e6)' }} />
-          {title}
-        </h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => scroll('prev')}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:border-blue-400 hover:text-blue-600 transition-colors text-gray-500"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => scroll('next')}
-            className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:border-blue-400 hover:text-blue-600 transition-colors text-gray-500"
-          >
-            <ChevronRight size={16} />
-          </button>
+    <div className="space-y-3">
+      <div className="relative aspect-square overflow-hidden rounded-2xl border bg-secondary" style={{ borderColor: "hsl(var(--border))" }}>
+        <Image src={imgs[active].url} alt="" fill className="object-contain p-4" unoptimized />
+      </div>
+      {imgs.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {imgs.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              className={cn(
+                "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors",
+                i === active ? "border-primary" : "border-transparent"
+              )}
+              style={i !== active ? { borderColor: "hsl(var(--border))" } : undefined}
+            >
+              <Image src={img.url} alt="" fill className="object-contain p-1" unoptimized />
+            </button>
+          ))}
         </div>
-      </div>
-      <div ref={ref} className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-        {items.map((p) => (
-          <div key={p.id} className="w-[200px] flex-shrink-0">
-            <ProductCard product={p} />
-          </div>
-        ))}
-      </div>
-    </section>
+      )}
+    </div>
+  );
+}
+
+function SpecsTab({ specs }: { specs: { key: string; value: string }[] }) {
+  if (!specs.length) return <p className="text-sm text-muted-foreground py-4">Характеристики не указаны</p>;
+
+  // Group by detecting repeated keys pattern
+  return (
+    <div className="divide-y" style={{ borderColor: "hsl(var(--border))" }}>
+      {specs.map((s, i) => (
+        <div key={i} className="grid grid-cols-2 gap-4 py-3 text-sm">
+          <span className="text-muted-foreground">{s.key}</span>
+          <span className="font-medium text-foreground">{s.value}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [product, setProduct]       = useState<any>(null);
-  const [loading, setLoading]       = useState(true);
-  const [selectedImg, setSelectedImg] = useState(0);
-  const [adding, setAdding]         = useState(false);
-  const [activeTab, setActiveTab]   = useState<'desc' | 'reviews'>('desc');
-  const [related, setRelated]       = useState<any[]>([]);
-  const [recommended, setRecommended] = useState<any[]>([]);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [tab, setTab] = useState<"desc" | "specs" | "reviews">("desc");
+  const [mounted, setMounted] = useState(false);
 
-  const { addItem } = useCartStore();
-  const { user } = useAuthStore();
-  const router = useRouter();
+  const favs = useFavoritesStore();
+  const cart = useCartStore();
 
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState('');
-  const [reviewHover, setReviewHover] = useState(0);
-  const [submittingReview, setSubmittingReview] = useState(false);
-  const [reviewError, setReviewError] = useState('');
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    setLoading(true);
-    setSelectedImg(0);
-    getProduct(slug)
-      .then((p) => {
-        setProduct(p);
-        // Fetch related (same category)
-        if (p?.category?.slug) {
-          getProducts({ category: p.category.slug, limit: 10 })
-            .then((r: any) => setRelated((r.items ?? []).filter((x: any) => x.id !== p.id)))
-            .catch(() => {});
-        }
-        // Fetch recommended
-        getFeatured()
-          .then((items: any[]) => setRecommended(items.filter((x) => x.id !== p.id).slice(0, 10)))
-          .catch(() => {});
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    if (!slug) return;
+    getProduct(slug).then((p) => { setProduct(p); setLoading(false); }).catch(() => setLoading(false));
   }, [slug]);
 
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) { router.push('/login'); return; }
-    setSubmittingReview(true);
-    setReviewError('');
-    try {
-      const newReview = await createReview({ productId: product.id, rating: reviewRating, comment: reviewComment || undefined });
-      setProduct((prev: any) => ({ ...prev, reviews: [newReview, ...(prev.reviews ?? [])] }));
-      setReviewComment('');
-      setReviewRating(5);
-    } catch (err: any) {
-      setReviewError(err?.response?.data?.message ?? 'Ошибка при отправке отзыва');
-    }
-    setSubmittingReview(false);
-  };
+  const isFav = mounted && product ? favs.has(product.id) : false;
 
-  const handleDeleteReview = async (reviewId: number) => {
-    try {
-      await deleteReview(reviewId);
-      setProduct((prev: any) => ({ ...prev, reviews: prev.reviews.filter((r: any) => r.id !== reviewId) }));
-    } catch {}
+  const handleFav = async () => {
+    if (!product) return;
+    favs.toggle(product.id);
+    try { await apiToggleFavorite(product.id); } catch {}
   };
 
   const handleAddToCart = async () => {
+    if (!product || adding) return;
     setAdding(true);
     try {
-      const item = await addToCart(product.id, 1);
-      addItem(item);
-    } catch {
-      addItem({ id: Date.now(), quantity: 1, productId: product.id, product });
-    } finally {
-      setAdding(false);
-      router.push('/cart');
-    }
+      const result = await apiAddToCart(product.id, 1);
+      cart.addItem({
+        id: result?.id ?? Date.now(),
+        quantity: 1,
+        productId: product.id,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: Number(product.price),
+          images: product.images ?? [],
+        },
+      });
+    } catch {}
+    setAdding(false);
   };
 
-  if (loading) return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="grid md:grid-cols-2 gap-10 animate-pulse">
-        <div className="aspect-square bg-gray-100 rounded-2xl" />
-        <div className="space-y-4 pt-4">
-          <div className="h-5 bg-gray-100 rounded w-1/4" />
-          <div className="h-8 bg-gray-100 rounded w-3/4" />
-          <div className="h-4 bg-gray-100 rounded w-1/2" />
-          <div className="h-10 bg-gray-100 rounded w-1/3 mt-6" />
-          <div className="h-12 bg-gray-100 rounded" />
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="grid gap-8 lg:grid-cols-2">
+          <div className="aspect-square rounded-2xl bg-secondary shimmer" />
+          <div className="space-y-4">
+            <div className="h-8 w-3/4 rounded-lg bg-secondary shimmer" />
+            <div className="h-4 w-1/2 rounded bg-secondary shimmer" />
+            <div className="h-10 w-1/3 rounded-lg bg-secondary shimmer" />
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  if (!product) return (
-    <div className="max-w-7xl mx-auto px-4 py-16 text-center text-gray-400">
-      <p className="text-xl mb-3">Товар не найден</p>
-      <Link href="/catalog" className="text-blue-600 hover:underline text-sm">Вернуться в каталог</Link>
-    </div>
-  );
+  if (!product) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center">
+        <h1 className="text-xl font-bold">Товар не найден</h1>
+        <Link href="/catalog" className="mt-4 inline-block text-primary hover:underline">← Вернуться в каталог</Link>
+      </div>
+    );
+  }
 
-  const images    = product.images || [];
-  const mainImg   = images[selectedImg] || images[0];
-  const avgRating = product.reviews?.length
-    ? product.reviews.reduce((s: number, r: any) => s + r.rating, 0) / product.reviews.length
-    : 0;
-  const reviewCount = product.reviews?.length ?? 0;
+  const price = Number(product.price);
+  const oldPrice = product.oldPrice ? Number(product.oldPrice) : null;
+  const discount = oldPrice && oldPrice > price ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-5">
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      {/* Breadcrumb */}
+      <nav className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link href="/" className="hover:text-foreground">Главная</Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <Link href="/catalog" className="hover:text-foreground">Каталог</Link>
+        {product.category && (
+          <>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link href={`/catalog?category=${product.category.slug}`} className="hover:text-foreground">{product.category.name}</Link>
+          </>
+        )}
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="text-foreground line-clamp-1">{product.name}</span>
+      </nav>
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-4 flex-wrap">
-          <Link href="/" className="hover:text-blue-600 transition-colors">Главная</Link>
-          <span>/</span>
-          <Link href="/catalog" className="hover:text-blue-600 transition-colors">Каталог товаров</Link>
-          {product.category && (
-            <>
-              <span>/</span>
-              <Link href={`/catalog?category=${product.category.slug}`} className="hover:text-blue-600 transition-colors">
-                {product.category.name}
-              </Link>
-            </>
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* Gallery */}
+        <Gallery images={product.images ?? []} />
+
+        {/* Info */}
+        <div className="space-y-5">
+          {product.brand && (
+            <span className="text-xs font-bold uppercase tracking-widest text-primary">{product.brand.name}</span>
           )}
-          <span>/</span>
-          <span className="text-gray-600 font-medium truncate max-w-[200px]">{product.name}</span>
-        </nav>
+          <h1 className="text-2xl font-extrabold leading-tight text-foreground">{product.name}</h1>
 
-        {/* Main card */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-4">
-          <div className="grid md:grid-cols-[45%_55%] gap-8">
+          {product.sku && (
+            <p className="text-xs text-muted-foreground">Артикул: {product.sku}</p>
+          )}
 
-            {/* ── Left: Images ── */}
-            <div>
-              <div className="border border-gray-100 rounded-xl flex items-center justify-center bg-white overflow-hidden" style={{ minHeight: 340 }}>
-                {mainImg ? (
-                  <img
-                    src={mainImg.url}
-                    alt={product.name}
-                    className="max-h-80 max-w-full object-contain p-4"
-                  />
-                ) : (
-                  <div className="text-gray-200 flex flex-col items-center gap-2">
-                    <ShoppingCart size={64} strokeWidth={1} />
-                    <span className="text-sm text-gray-300">Нет изображения</span>
-                  </div>
-                )}
+          {/* Rating */}
+          {product.reviewCount > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={cn("h-4 w-4", i < Math.round(product.rating) ? "fill-warning text-warning" : "fill-muted text-muted")} />
+                ))}
               </div>
-              {images.length > 1 && (
-                <div className="flex gap-2 mt-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-                  {images.map((img: any, i: number) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedImg(i)}
-                      className={`w-16 h-16 flex-shrink-0 rounded-lg border-2 p-1 transition-all ${
-                        i === selectedImg ? 'border-blue-500 shadow-sm' : 'border-gray-100 hover:border-gray-300'
-                      }`}
-                    >
-                      <img src={img.url} alt="" className="w-full h-full object-contain" />
-                    </button>
-                  ))}
-                </div>
-              )}
+              <span className="text-sm text-muted-foreground">({product.reviewCount} отзывов)</span>
             </div>
+          )}
 
-            {/* ── Right: Info ── */}
-            <div className="flex flex-col pr-6">
-              {/* Brand */}
-              {product.brand && (
-                <span className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#0057B8' }}>
-                  {product.brand.name}
-                </span>
-              )}
-
-              {/* Name */}
-              <h1 className="text-xl font-bold text-gray-900 leading-snug mb-2">{product.name}</h1>
-
-              {/* Rating */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex">
-                  {[1,2,3,4,5].map((s) => (
-                    <Star
-                      key={s}
-                      size={13}
-                      className={s <= Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-gray-400">
-                  {reviewCount > 0
-                    ? `${reviewCount} отзыв${reviewCount === 1 ? '' : reviewCount < 5 ? 'а' : 'ов'}`
-                    : 'нет отзывов, будьте первым кто напишет отзыв'}
-                </span>
-              </div>
-
-              <div className="border-t border-gray-100 pt-4">
-                {/* Stock + Price */}
-                <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
-                  <span className={`flex items-center gap-1.5 text-sm font-medium shrink-0 ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    {product.stock > 0 ? (
-                      <><Check size={15} className="bg-green-500 text-white rounded-full p-0.5" /> В наличии</>
-                    ) : (
-                      'Нет в наличии'
-                    )}
-                  </span>
-                  <div className="text-right shrink-0">
-                    <div className="text-2xl sm:text-3xl font-bold leading-tight" style={{ color: '#E53E3E' }}>
-                      {Number(product.price).toLocaleString()} сом
-                    </div>
-                    {product.oldPrice && (
-                      <div className="text-sm text-gray-400 line-through">
-                        {Number(product.oldPrice).toLocaleString()} сом
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Add to cart */}
-                <button
-                  onClick={handleAddToCart}
-                  disabled={product.stock === 0 || adding}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-white text-sm transition-all mb-4 disabled:bg-gray-200 disabled:cursor-not-allowed"
-                  style={product.stock > 0 ? { background: 'linear-gradient(135deg, #003d8f, #0077e6)' } : {}}
-                >
-                  <ShoppingCart size={17} /> В корзину
-                </button>
-
-                {/* Phones */}
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Уточнить наличие по телефонам:
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {PHONES.map((phone) => (
-                      <a
-                        key={phone}
-                        href={`tel:${phone.replace(/\s/g, '')}`}
-                        className="flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80"
-                        style={{ color: '#0057B8' }}
-                      >
-                        <Phone size={14} />
-                        {phone}
-                      </a>
-                    ))}
-                  </div>
-                  <div className="flex items-start gap-2 pt-1 border-t border-gray-100">
-                    <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs text-gray-500">г. Бишкек</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs: description / reviews */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
-          <div className="flex border-b border-gray-100">
-            {(['desc', 'reviews'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                  activeTab === tab
-                    ? 'border-blue-600 text-blue-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {tab === 'desc' ? 'Полное описание' : `Отзывы покупателей (${reviewCount})`}
-              </button>
-            ))}
-          </div>
-          <div className="p-6">
-            {activeTab === 'desc' ? (
-              <div>
-                {product.description ? (
-                  <p className="text-sm text-gray-600 leading-relaxed mb-6 whitespace-pre-line">{product.description}</p>
-                ) : (
-                  <p className="text-sm text-gray-400 mb-6">Описание не добавлено</p>
+          {/* Price */}
+          <div className="flex items-baseline gap-3">
+            <span className="text-3xl font-black tabular-nums">{formatPrice(price)}</span>
+            {oldPrice && (
+              <>
+                <span className="text-lg text-muted-foreground line-through tabular-nums">{formatPrice(oldPrice)}</span>
+                {discount > 0 && (
+                  <span className="rounded-lg bg-primary/10 px-2 py-0.5 text-sm font-bold text-primary">−{discount}%</span>
                 )}
-                {product.specs?.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">Характеристики:</h3>
-                    <div className="divide-y divide-gray-100">
-                      {product.specs.map((spec: any) => (
-                        <div key={spec.id} className="flex py-2.5 text-sm">
-                          <span className="text-gray-500 w-1/2">· {spec.key}</span>
-                          <span className="text-gray-800 font-medium">{spec.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                {/* Review form */}
-                {(() => {
-                  const alreadyReviewed = user && product.reviews?.some((r: any) => r.userId === user.id);
-                  return !alreadyReviewed ? (
-                    <div className="bg-gray-50 rounded-xl p-5 mb-6">
-                      <h3 className="text-sm font-bold text-gray-800 mb-3">
-                        {user ? 'Оставить отзыв' : 'Войдите, чтобы оставить отзыв'}
-                      </h3>
-                      {user ? (
-                        <form onSubmit={handleSubmitReview} className="space-y-3">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1.5">Оценка</p>
-                            <div className="flex gap-1">
-                              {[1,2,3,4,5].map((s) => (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  onClick={() => setReviewRating(s)}
-                                  onMouseEnter={() => setReviewHover(s)}
-                                  onMouseLeave={() => setReviewHover(0)}
-                                >
-                                  <Star
-                                    size={24}
-                                    className={s <= (reviewHover || reviewRating)
-                                      ? 'fill-yellow-400 text-yellow-400'
-                                      : 'fill-gray-200 text-gray-200'}
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <textarea
-                            rows={3}
-                            placeholder="Ваш отзыв (необязательно)"
-                            value={reviewComment}
-                            onChange={(e) => setReviewComment(e.target.value)}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none bg-white"
-                          />
-                          {reviewError && <p className="text-xs text-red-500">{reviewError}</p>}
-                          <button
-                            type="submit"
-                            disabled={submittingReview}
-                            className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                            style={{ background: 'linear-gradient(135deg,#003d8f,#0077e6)' }}
-                          >
-                            {submittingReview ? 'Отправка...' : 'Опубликовать'}
-                          </button>
-                        </form>
-                      ) : (
-                        <Link href="/login" className="text-sm text-blue-600 hover:underline">Войти</Link>
-                      )}
-                    </div>
-                  ) : null;
-                })()}
-
-                {/* Reviews list */}
-                {reviewCount === 0 ? (
-                  <p className="text-sm text-gray-400">Отзывов пока нет. Будьте первым!</p>
-                ) : (
-                  <div className="space-y-4">
-                    {product.reviews.map((r: any) => (
-                      <div key={r.id} className="border-b border-gray-100 pb-4 last:border-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="flex">
-                                {[1,2,3,4,5].map((s) => (
-                                  <Star key={s} size={12} className={s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'} />
-                                ))}
-                              </div>
-                              <span className="text-xs font-semibold text-gray-700">{r.user?.name}</span>
-                              <span className="text-xs text-gray-400">
-                                {new Date(r.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                              </span>
-                            </div>
-                            {r.comment && <p className="text-sm text-gray-600">{r.comment}</p>}
-                          </div>
-                          {user && (user.id === r.userId || user.role === 'ADMIN') && (
-                            <button
-                              onClick={() => handleDeleteReview(r.id)}
-                              className="text-xs text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
-                            >
-                              Удалить
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              </>
             )}
           </div>
+
+          {/* Stock */}
+          <div className="flex items-center gap-2 text-sm">
+            {product.stock > 0 ? (
+              <>
+                <Check className="h-4 w-4 text-success" />
+                <span className="text-success font-medium">В наличии</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">Нет в наличии</span>
+            )}
+          </div>
+
+          {/* Short description */}
+          {product.shortDescription && (
+            <p className="text-sm text-muted-foreground leading-relaxed">{product.shortDescription}</p>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleAddToCart}
+              disabled={adding || product.stock === 0}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {adding ? "Добавляем..." : "В корзину"}
+            </button>
+            <button
+              onClick={handleFav}
+              className={cn(
+                "flex h-12 w-12 items-center justify-center rounded-xl border-2 transition-colors",
+                isFav ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+              )}
+              aria-label="В избранное"
+            >
+              <Heart className={cn("h-5 w-5", isFav && "fill-current")} />
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Часто просматриваемые (related by category) */}
-        <ProductCarousel title="Покупатели также смотрели" items={related} />
-
-        {/* Рекомендованные */}
-        <ProductCarousel title="Рекомендованные товары" items={recommended} />
-
+      {/* Tabs */}
+      <div className="mt-10">
+        <div className="flex border-b" style={{ borderColor: "hsl(var(--border))" }}>
+          {(["desc", "specs", "reviews"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px",
+                tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t === "desc" ? "Описание" : t === "specs" ? "Характеристики" : "Отзывы"}
+            </button>
+          ))}
+        </div>
+        <div className="py-6">
+          {tab === "desc" && (
+            <div className="prose prose-sm max-w-none">
+              {product.description
+                ? <p className="text-sm leading-relaxed text-foreground">{product.description}</p>
+                : <p className="text-sm text-muted-foreground">Описание отсутствует</p>
+              }
+            </div>
+          )}
+          {tab === "specs" && <SpecsTab specs={product.specs ?? []} />}
+          {tab === "reviews" && (
+            <p className="text-sm text-muted-foreground">
+              {product.reviewCount > 0 ? `${product.reviewCount} отзывов` : "Пока нет отзывов. Будьте первым!"}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

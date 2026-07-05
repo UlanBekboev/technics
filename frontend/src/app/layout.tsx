@@ -1,18 +1,15 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
 import './globals.css';
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
-
 export const metadata: Metadata = {
-  title: 'TECHNICS — электроника и бытовая техника в Бишкеке',
-  description: 'Интернет-магазин электроники, ноутбуков, смартфонов и бытовой техники',
+  title: 'TECHNICS — системы безопасности и цифровая техника в Бишкеке',
+  description: 'Интернет-магазин систем видеонаблюдения, IP-камер, регистраторов и цифровой техники в Бишкеке и по Кыргызстану.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={geist.variable}>
-      <body className="min-h-screen flex flex-col bg-gray-50 font-sans antialiased">
+    <html lang="ru">
+      <body className="min-h-screen antialiased">
         {children}
       </body>
     </html>

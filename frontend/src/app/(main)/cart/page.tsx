@@ -1,43 +1,27 @@
-'use client';
-import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { Trash2, ShoppingCart, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCartStore } from '@/store/cart';
-import { useAuthStore } from '@/store/auth';
-import { updateCartItem, removeFromCart, getFeatured } from '@/lib/api';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ShoppingCart, Trash2, Minus, Plus, ArrowRight, Camera } from "lucide-react";
+import { useCartStore } from "@/store/cart";
+import { useAuthStore } from "@/store/auth";
+import { updateCartItem, removeFromCart, createOrder } from "@/lib/api";
+import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export default function CartPage() {
-  const { items, updateItem, removeItem, total } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
-  const [showAuthPopup, setShowAuthPopup] = useState(false);
-  const [recommended, setRecommended] = useState<any[]>([]);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const { items, updateItem, removeItem, clearCart, total } = useCartStore();
+  const { user } = useAuthStore();
+  const [address, setAddress] = useState("");
+  const [comment, setComment] = useState("");
+  const [placing, setPlacing] = useState(false);
+  const [done, setDone] = useState(false);
 
-  useEffect(() => {
-    getFeatured().then(setRecommended).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (recommended.length === 0) return;
-    const t = setInterval(() => {
-      const el = carouselRef.current;
-      if (!el) return;
-      if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 10) {
-        el.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        el.scrollBy({ left: 250, behavior: 'smooth' });
-      }
-    }, 3000);
-    return () => clearInterval(t);
-  }, [recommended]);
-
-  const scrollCarousel = (dir: 'prev' | 'next') =>
-    carouselRef.current?.scrollBy({ left: dir === 'next' ? 250 : -250, behavior: 'smooth' });
-
-  const handleQtyChange = async (productId: number, qty: number) => {
-    if (qty < 1) return;
-    updateItem(productId, qty);
-    try { await updateCartItem(productId, qty); } catch {}
+  const handleQuantity = async (productId: number, quantity: number) => {
+    if (quantity < 1) return;
+    updateItem(productId, quantity);
+    try { await updateCartItem(productId, quantity); } catch {}
   };
 
   const handleRemove = async (productId: number) => {
@@ -45,240 +29,156 @@ export default function CartPage() {
     try { await removeFromCart(productId); } catch {}
   };
 
-  const handleCheckout = () => {
-    if (!isAuthenticated()) { setShowAuthPopup(true); return; }
-    window.location.href = '/checkout';
+  const handleOrder = async () => {
+    if (!address.trim()) return;
+    setPlacing(true);
+    try {
+      await createOrder(address, comment);
+      clearCart();
+      setDone(true);
+    } catch {}
+    setPlacing(false);
   };
 
-  if (items.length === 0) {
+  if (done) {
     return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center py-16">
-          <ShoppingCart size={72} className="text-gray-200 mx-auto mb-4" strokeWidth={1} />
-          <h2 className="text-xl font-bold text-gray-700 mb-2">Корзина пуста</h2>
-          <p className="text-gray-400 text-sm mb-6">Добавьте товары из каталога</p>
-          <Link href="/catalog"
-            className="inline-flex items-center gap-2 text-white text-sm font-semibold px-6 py-3 rounded-lg"
-            style={{ background: '#0057B8' }}>
-            Перейти в каталог <ChevronRight size={16} />
-          </Link>
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center">
+        <div className="text-6xl mb-6">✅</div>
+        <h1 className="text-2xl font-extrabold mb-3">Заказ оформлен!</h1>
+        <p className="text-muted-foreground mb-6">Мы свяжемся с вами для подтверждения.</p>
+        <Link href="/catalog" className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90">
+          Продолжить покупки <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     );
   }
 
+  if (!items.length) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-20 text-center">
+        <ShoppingCart className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" />
+        <h1 className="text-xl font-bold mb-3">Корзина пуста</h1>
+        <p className="text-sm text-muted-foreground mb-6">Добавьте товары из каталога</p>
+        <Link href="/catalog" className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90">
+          Перейти в каталог <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    );
+  }
+
+  const subtotal = total();
+  const delivery = subtotal >= 50000 ? 0 : 300;
+
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 py-5">
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      <h1 className="mb-6 text-2xl font-extrabold">Корзина</h1>
 
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1 text-xs text-gray-400 mb-4">
-          <Link href="/" className="hover:text-gray-600">Главная</Link>
-          <span className="mx-1">›</span>
-          <span className="text-gray-600">Корзина товаров</span>
-          {[0,1,2].map(i => <span key={i} className="flex items-center gap-1"><span className="mx-1">›</span><span className="w-3 h-1 rounded-sm bg-gray-300 inline-block" /></span>)}
-        </nav>
-
-        {/* Table */}
-        <div className="bg-white border border-gray-200 mb-3">
-          {/* Header */}
-          <div
-            className="grid border-b border-gray-200 px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600"
-            style={{ gridTemplateColumns: '108px 1fr 150px 130px 140px 44px' }}
-          >
-            <span>Фото</span>
-            <span>Название товара</span>
-            <span className="text-center">Кол-во</span>
-            <span className="text-right">Цена за единицу</span>
-            <span className="text-right">Общая стоимость</span>
-            <span />
-          </div>
-
-          {/* Rows */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Items */}
+        <div className="lg:col-span-2 space-y-3">
           {items.map((item) => {
-            const img = item.product.images?.find((i: any) => i.isMain) || item.product.images?.[0];
-            const lineTotal = Number(item.product.price) * item.quantity;
+            const img = item.product.images?.find((i) => i.isMain)?.url ?? item.product.images?.[0]?.url;
             return (
-              <div
-                key={item.id}
-                className="grid border-b border-gray-100 last:border-0 px-4 py-3 items-center"
-                style={{ gridTemplateColumns: '108px 1fr 150px 130px 140px 44px' }}
-              >
-                {/* Photo */}
-                <Link href={`/product/${item.product.slug}`}>
-                  <div className="w-20 h-20 border border-gray-200 flex items-center justify-center bg-white overflow-hidden">
-                    {img
-                      ? <img src={img.url} alt="" className="w-full h-full object-contain p-1" />
-                      : <ShoppingCart size={22} className="text-gray-200" />}
+              <div key={item.productId} className="flex gap-4 rounded-xl border bg-white p-4" style={{ borderColor: "hsl(var(--border))" }}>
+                <Link href={`/product/${item.product.slug}`} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-secondary">
+                  {img
+                    ? <Image src={img} alt={item.product.name} fill className="object-contain p-1" unoptimized />
+                    : <Camera className="m-auto h-8 w-8 text-muted-foreground/30" />
+                  }
+                </Link>
+
+                <div className="flex flex-1 flex-col gap-2">
+                  <Link href={`/product/${item.product.slug}`} className="text-sm font-medium hover:text-primary line-clamp-2">
+                    {item.product.name}
+                  </Link>
+                  <span className="text-base font-extrabold">{formatPrice(Number(item.product.price))}</span>
+
+                  <div className="flex items-center gap-3 mt-auto">
+                    {/* Quantity */}
+                    <div className="flex items-center rounded-lg border" style={{ borderColor: "hsl(var(--border))" }}>
+                      <button onClick={() => handleQuantity(item.productId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center hover:bg-secondary">
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                      <button onClick={() => handleQuantity(item.productId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center hover:bg-secondary">
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      {formatPrice(Number(item.product.price) * item.quantity)}
+                    </span>
+
+                    <button onClick={() => handleRemove(item.productId)} className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                </Link>
-
-                {/* Name */}
-                <Link
-                  href={`/product/${item.product.slug}`}
-                  className="text-sm text-gray-800 hover:text-blue-700 transition-colors leading-snug pr-3"
-                >
-                  {item.product.name}
-                </Link>
-
-                {/* Qty */}
-                <div className="flex items-center justify-center gap-1">
-                  <button
-                    onClick={() => handleQtyChange(item.productId, item.quantity - 1)}
-                    className="w-8 h-8 border border-gray-300 flex items-center justify-center text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-colors font-bold text-lg leading-none"
-                  >−</button>
-                  <span className="w-9 text-center text-sm font-semibold text-gray-800 border-y border-gray-300 h-8 flex items-center justify-center">
-                    {item.quantity}
-                  </span>
-                  <button
-                    onClick={() => handleQtyChange(item.productId, item.quantity + 1)}
-                    className="w-8 h-8 border border-gray-300 flex items-center justify-center text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-colors font-bold text-lg leading-none"
-                  >+</button>
-                </div>
-
-                {/* Unit price */}
-                <div className="text-right text-sm text-gray-700">
-                  {Number(item.product.price).toLocaleString()}
-                </div>
-
-                {/* Line total */}
-                <div className="text-right text-sm font-bold" style={{ color: '#C01D2E' }}>
-                  {lineTotal.toLocaleString()}
-                </div>
-
-                {/* Delete */}
-                <div className="flex justify-center">
-                  <button onClick={() => handleRemove(item.productId)}
-                    className="text-gray-400 hover:text-red-500 transition-colors">
-                    <Trash2 size={18} />
-                  </button>
                 </div>
               </div>
             );
           })}
-
-          {/* Итого */}
-          <div className="flex justify-end items-center px-6 py-3 border-t border-gray-200 bg-gray-50">
-            <span className="text-sm text-gray-600 mr-2">Итого:</span>
-            <span className="text-lg font-bold" style={{ color: '#C01D2E' }}>
-              {total().toLocaleString()} сом
-            </span>
-          </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-3 mb-8">
-          <Link
-            href="/catalog"
-            className="flex-1 text-center text-sm font-medium py-3.5 border border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-all bg-white"
-          >
-            Продолжить покупки
-          </Link>
-          <button
-            onClick={handleCheckout}
-            className="flex-1 text-sm font-bold text-white py-3.5 transition-opacity hover:opacity-90"
-            style={{ background: '#C01D2E' }}
-          >
-            Оформить доставку
-          </button>
-        </div>
+        {/* Order summary */}
+        <div className="space-y-4">
+          <div className="rounded-xl border bg-white p-5 space-y-4 sticky top-24" style={{ borderColor: "hsl(var(--border))" }}>
+            <h2 className="font-extrabold text-lg">Итого</h2>
 
-        {/* С этим товаром покупают */}
-        {recommended.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold text-gray-900">С этим товаром покупают</h2>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => scrollCarousel('prev')}
-                  className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
-                  onClick={() => scrollCarousel('next')}
-                  className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
-                >
-                  <ChevronRight size={16} />
-                </button>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Товары ({items.reduce((s, i) => s + i.quantity, 0)} шт.)</span>
+                <span>{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Доставка</span>
+                <span>{delivery === 0 ? <span className="text-success">Бесплатно</span> : formatPrice(delivery)}</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between font-bold text-base" style={{ borderColor: "hsl(var(--border))" }}>
+                <span>К оплате</span>
+                <span>{formatPrice(subtotal + delivery)}</span>
               </div>
             </div>
 
-            <div
-              ref={carouselRef}
-              className="flex gap-4 overflow-x-auto pb-2"
-              style={{ scrollbarWidth: 'none' }}
-            >
-              {recommended.map((p) => {
-                const img = p.images?.find((i: any) => i.isMain) || p.images?.[0];
-                return (
-                  <Link
-                    key={p.id}
-                    href={`/product/${p.slug}`}
-                    className="flex-shrink-0 w-[230px] bg-white border border-gray-200 hover:shadow-md transition-shadow group"
-                  >
-                    <div className="w-full aspect-square overflow-hidden bg-white">
-                      {img
-                        ? <img
-                            src={img.url}
-                            alt={p.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        : <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                            <ShoppingCart size={40} className="text-gray-200" />
-                          </div>
-                      }
-                    </div>
-                    <div className="p-3">
-                      <p className="text-xs text-gray-700 line-clamp-2 leading-snug mb-1.5 group-hover:text-blue-700 transition-colors">
-                        {p.name}
-                      </p>
-                      <p className="text-sm font-bold" style={{ color: '#C01D2E' }}>
-                        {Number(p.price).toLocaleString()} сом
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
-      </div>
+            {delivery > 0 && (
+              <p className="text-xs text-muted-foreground">Бесплатная доставка от {formatPrice(50000)}</p>
+            )}
 
-      {/* Auth popup */}
-      {showAuthPopup && (
-        <div
-          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowAuthPopup(false)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full text-center relative"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowAuthPopup(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X size={20} />
-            </button>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Требуется вход</h3>
-            <p className="text-sm mb-6" style={{ color: '#0057B8' }}>Пожалуйста, сначала авторизуйтесь.</p>
-            <Link
-              href="/login?redirect=%2Fcart"
-              className="block w-full text-white font-bold py-3 rounded-lg uppercase tracking-wide text-sm mb-3 hover:opacity-90"
-              style={{ background: '#C01D2E' }}
-            >
-              Авторизоваться
-            </Link>
-            <button
-              onClick={() => setShowAuthPopup(false)}
-              className="text-sm text-gray-400 hover:text-gray-700"
-            >
-              Отмена
-            </button>
+            {user ? (
+              <div className="space-y-3">
+                <textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Адрес доставки *"
+                  rows={2}
+                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary resize-none"
+                  style={{ borderColor: "hsl(var(--border))" }}
+                />
+                <input
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Комментарий (необязательно)"
+                  className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-primary"
+                  style={{ borderColor: "hsl(var(--border))" }}
+                />
+                <button
+                  onClick={handleOrder}
+                  disabled={placing || !address.trim()}
+                  className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  {placing ? "Оформляем..." : "Оформить заказ"}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">Войдите чтобы оформить заказ</p>
+                <Link href="/login" className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground hover:opacity-90">
+                  Войти <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -37,7 +37,11 @@ export class AuthService {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new UnauthorizedException('Неверный email или пароль');
 
-    return this.signToken(user.id, user.email, user.role);
+    const token = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+    return {
+      token,
+      user: { id: user.id, email: user.email, name: user.name, phone: user.phone ?? undefined, role: user.role },
+    };
   }
 
   async getProfile(userId: number) {

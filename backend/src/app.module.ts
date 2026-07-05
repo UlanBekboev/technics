@@ -10,6 +10,9 @@ import { UploadModule } from './upload/upload.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { BannersModule } from './banners/banners.module';
+import { SettingsModule } from './settings/settings.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { ReviewsModule } from './reviews/reviews.module';
     CloudinaryModule,
     FavoritesModule,
     ReviewsModule,
+    BannersModule,
+    SettingsModule,
+    MessagesModule,
   ],
 })
-export class AppModule {}
+export class AppModule {} // force rebuild
