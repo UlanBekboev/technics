@@ -95,15 +95,17 @@ export function Header() {
       <div className="sticky top-0 z-40">
         {/* Admin bar — visible only for ADMIN role */}
         {mounted && user?.role === "ADMIN" && (
-          <div className="flex h-8 items-center justify-between bg-foreground px-4 text-xs">
-            <span className="text-white/50 font-medium">Режим администратора</span>
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 rounded-md bg-white/10 px-2.5 py-1 font-semibold text-white transition-colors hover:bg-white/20"
-            >
-              <LayoutDashboard className="h-3 w-3" />
-              Панель управления
-            </Link>
+          <div className="bg-foreground text-xs h-8">
+            <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+              <span className="text-white/50 font-medium">Режим администратора</span>
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 rounded-md bg-white/10 px-2.5 py-1 font-semibold text-white transition-colors hover:bg-white/20"
+              >
+                <LayoutDashboard className="h-3 w-3" />
+                Панель управления
+              </Link>
+            </div>
           </div>
         )}
       <header className="border-b bg-white/95 backdrop-blur-lg" style={{ borderColor: "hsl(var(--border))" }}>

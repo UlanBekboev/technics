@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowRight, Shield, Truck, Headphones, Award, ChevronLeft, ChevronRight, Wifi, Camera, Tag } from "lucide-react";
 import { ProductCard, ProductCardSkeleton } from "@/components/product/product-card";
 import { getProducts, getCategories, getBanners } from "@/lib/api";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 import type { Product, Category, Banner } from "@/types";
 
 /* ── helpers ── */
@@ -179,36 +180,38 @@ function CategoriesSection({ categories }: { categories: Category[] }) {
 }
 
 /* ── Promo Section (preview) ── */
-const PROMO_ITEMS = [
-  {
-    gradient: "linear-gradient(135deg,#0057B8,#0077e6)",
-    icon: "wifi",
-    label: "АКЦИЯ",
-    title: "Wi-Fi камеры EZVIZ",
-    subtitle: "Без прокладки кабеля · с установкой",
-    imgs: [
-      "https://emin.kg/files/9b29d4867b37401aae450b8c46fbb829",
-      "https://emin.kg/files/9108eb5fc94d46f99b18d5f79aed7f2e",
-      "https://emin.kg/files/1153f9859209440296d7b7c12a59aa33",
-      "",
-    ],
-    price: "от 2 350 сом",
-  },
-  {
-    gradient: "linear-gradient(135deg,#003d8f,#0057B8)",
-    icon: "camera",
-    label: "АКЦИЯ",
-    title: "Видеонаблюдение под ключ",
-    subtitle: "4МР · TVT · NVR + PoE · 4 камеры",
-    imgs: [
-      "",
-      "",
-    ],
-    price: "от 21 900 сом",
-  },
-];
-
 function PromoSection() {
+  const s = useSiteSettings();
+
+  const promoItems = [
+    {
+      gradient: "linear-gradient(135deg,#0057B8,#0077e6)",
+      icon: "wifi",
+      label: "АКЦИЯ",
+      title: "Wi-Fi камеры EZVIZ",
+      subtitle: "Без прокладки кабеля · с установкой",
+      imgs: [
+        s["promo_ezviz_0"] || "https://emin.kg/files/9b29d4867b37401aae450b8c46fbb829",
+        s["promo_ezviz_1"] || "https://emin.kg/files/9108eb5fc94d46f99b18d5f79aed7f2e",
+        s["promo_ezviz_2"] || "https://emin.kg/files/1153f9859209440296d7b7c12a59aa33",
+        s["promo_ezviz_3"] || "",
+      ],
+      price: "от 2 350 сом",
+    },
+    {
+      gradient: "linear-gradient(135deg,#003d8f,#0057B8)",
+      icon: "camera",
+      label: "АКЦИЯ",
+      title: "Видеонаблюдение под ключ",
+      subtitle: "4МР · TVT · NVR + PoE · 4 камеры",
+      imgs: [
+        s["promo_tvt_0"] || "",
+        s["promo_tvt_1"] || "",
+      ],
+      price: "от 21 900 сом",
+    },
+  ];
+
   return (
     <section>
       <div className="mb-5 flex items-center justify-between">
@@ -221,7 +224,7 @@ function PromoSection() {
         </Link>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {PROMO_ITEMS.map((item) => (
+        {promoItems.map((item) => (
           <Link key={item.title} href="/aktsii"
             className="group overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md"
             style={{ borderColor: "hsl(var(--border))" }}>
