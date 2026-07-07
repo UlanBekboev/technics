@@ -81,17 +81,9 @@ function HeroSlider({ banners }: { banners: Banner[] }) {
   const currentImg = imgs[Math.min(imgIdx, imgs.length - 1)] ?? "";
   const overlay = getOverlay(b.overlayStyle);
 
-  const BannerWrapper = ({ children }: { children: React.ReactNode }) =>
-    b.buttonUrl ? (
-      <Link href={b.buttonUrl} className="block relative h-[300px] overflow-hidden rounded-2xl sm:h-[400px] lg:h-[480px] cursor-pointer"
-        style={{ background: overlay.containerBg }}>{children}</Link>
-    ) : (
-      <div className="relative h-[300px] overflow-hidden rounded-2xl sm:h-[400px] lg:h-[480px]"
-        style={{ background: overlay.containerBg }}>{children}</div>
-    );
-
   return (
-    <BannerWrapper>
+    <div className="relative h-[300px] overflow-hidden rounded-2xl sm:h-[400px] lg:h-[480px]"
+      style={{ background: overlay.containerBg }}>
       {currentImg && (
         <Image src={currentImg} alt={b.title} fill className="object-cover transition-opacity duration-300"
           style={{ opacity: overlay.imgOpacity }} unoptimized />
@@ -103,9 +95,9 @@ function HeroSlider({ banners }: { banners: Banner[] }) {
         <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">{b.title}</h2>
         {b.subtitle && <p className="mt-4 text-white/80 sm:text-lg">{b.subtitle}</p>}
         {b.buttonText && b.buttonUrl && (
-          <span className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary hover:scale-105 transition-transform">
+          <Link href={b.buttonUrl} className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary hover:scale-105 transition-transform">
             {b.buttonText} <ArrowRight className="h-4 w-4" />
-          </span>
+          </Link>
         )}
       </div>
 
@@ -115,7 +107,7 @@ function HeroSlider({ banners }: { banners: Banner[] }) {
           {imgs.map((img, i) => (
             <button
               key={i}
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setImgIdx(i); }}
+              onClick={() => setImgIdx(i)}
               className={`relative h-10 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                 i === imgIdx ? "border-white shadow-lg scale-105" : "border-white/30 opacity-50 hover:opacity-90"
               }`}
@@ -128,23 +120,23 @@ function HeroSlider({ banners }: { banners: Banner[] }) {
 
       {banners.length > 1 && (
         <>
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdx((i) => (i - 1 + banners.length) % banners.length); }}
+          <button onClick={() => setIdx((i) => (i - 1 + banners.length) % banners.length)}
             className="absolute left-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur hover:bg-white/30">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdx((i) => (i + 1) % banners.length); }}
+          <button onClick={() => setIdx((i) => (i + 1) % banners.length)}
             className="absolute right-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur hover:bg-white/30">
             <ChevronRight className="h-5 w-5" />
           </button>
           <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 flex gap-1.5">
             {banners.map((_, i) => (
-              <button key={i} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIdx(i); }}
+              <button key={i} onClick={() => setIdx(i)}
                 className={`h-1.5 rounded-full transition-all ${i === idx ? "w-6 bg-white" : "w-1.5 bg-white/50"}`} />
             ))}
           </div>
         </>
       )}
-    </BannerWrapper>
+    </div>
   );
 }
 
