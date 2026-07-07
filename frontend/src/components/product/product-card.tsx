@@ -166,14 +166,20 @@ export function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
-          <button
-            onClick={handleAddToCart}
-            disabled={adding || product.stock === 0}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {adding ? "Добавляем..." : "В корзину"}
-          </button>
+          {product.stock === 0 ? (
+            <div className="mt-3 flex w-full items-center justify-center rounded-lg bg-red-500 px-3 py-2 text-sm font-semibold text-white">
+              Нет в наличии
+            </div>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              disabled={adding}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              {adding ? "Добавляем..." : "В корзину"}
+            </button>
+          )}
         </div>
       </div>
     </motion.article>
