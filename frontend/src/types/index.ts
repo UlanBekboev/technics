@@ -46,6 +46,7 @@ export interface Category {
   featured: boolean;
   showInCatalog: boolean;
   position: number;
+  productCount?: number;
   subcategories?: Category[];
 }
 

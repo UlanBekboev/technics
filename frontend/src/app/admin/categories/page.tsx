@@ -3,13 +3,19 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { getCategoriesFlat, adminCreateCategory, adminUpdateCategory, adminDeleteCategory } from '@/lib/api';
-import { Pencil, Trash2, Plus, X, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Plus, X, Loader2, icons } from 'lucide-react';
 import Image from 'next/image';
 import { MultiImageUpload, parseImages, serializeImages } from '@/components/MultiImageUpload';
 
-type Category = { id: number; name: string; slug: string; imageUrl?: string; parentId?: number; showInCatalog?: boolean; featured?: boolean; position?: number };
+type Category = { id: number; name: string; slug: string; imageUrl?: string; icon?: string; parentId?: number; showInCatalog?: boolean; featured?: boolean; position?: number };
 
-const EMPTY_FORM = { name: '', slug: '', parentId: '', showInCatalog: true, featured: false, position: '0' };
+const EMPTY_FORM = { name: '', slug: '', icon: 'Package', parentId: '', showInCatalog: true, featured: false, position: '0' };
+
+const ICON_OPTIONS = [
+  'Cctv', 'Video', 'Camera', 'Siren', 'Bell', 'ScanFace', 'Keyboard', 'Network',
+  'Cpu', 'Monitor', 'Laptop', 'Tablet', 'Printer', 'Projector', 'Tv', 'HardDrive',
+  'Snowflake', 'Radio', 'Store', 'BatteryCharging', 'Package',
+] as const satisfies readonly (keyof typeof icons)[];
 
 function slugify(s: string) {
   return s
@@ -56,6 +62,7 @@ export default function AdminCategoriesPage() {
     setForm({
       name: c.name,
       slug: c.slug,
+      icon: c.icon && c.icon in icons ? c.icon : 'Package',
       parentId: c.parentId ? String(c.parentId) : '',
       showInCatalog: c.showInCatalog !== false,
       featured: c.featured ?? false,
@@ -72,6 +79,7 @@ export default function AdminCategoriesPage() {
       const payload = {
         name: form.name,
         slug: form.slug,
+        icon: form.icon,
         imageUrl: serializeImages(images) || undefined,
         parentId: form.parentId ? parseInt(form.parentId) : null,
         showInCatalog: form.showInCatalog,
@@ -146,6 +154,7 @@ export default function AdminCategoriesPage() {
                 </tr>
               ) : categories.map((cat) => {
                 const primary = parseImages(cat.imageUrl)[0];
+                const IconComp = icons[(cat.icon ?? '') as keyof typeof icons] ?? icons.Package;
                 return (
                   <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-2 xs:px-4 py-3">
@@ -154,7 +163,9 @@ export default function AdminCategoriesPage() {
                           <Image src={primary} alt="" fill className="object-cover" unoptimized />
                         </div>
                       ) : (
-                        <div className="w-8 h-8 2xs:w-10 2xs:h-10 rounded-lg bg-gray-100 flex-shrink-0" />
+                        <div className="flex items-center justify-center w-8 h-8 2xs:w-10 2xs:h-10 rounded-lg bg-gray-100 text-gray-400 flex-shrink-0">
+                          <IconComp size={16} />
+                        </div>
                       )}
                     </td>
                     <td className="px-2 xs:px-4 py-3 max-w-0 w-full">
@@ -252,6 +263,29 @@ export default function AdminCategoriesPage() {
                   Изображения <span className="font-normal text-gray-400">(первое — главное)</span>
                 </label>
                 <MultiImageUpload images={images} onChange={setImages} active={showForm} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Иконка</label>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {ICON_OPTIONS.map((name) => {
+                    const IconComp = icons[name];
+                    const active = form.icon === name;
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        title={name}
+                        onClick={() => setForm((f) => ({ ...f, icon: name }))}
+                        className={`flex items-center justify-center rounded-lg border p-2 transition-colors ${
+                          active ? 'border-blue-400 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <IconComp size={16} />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
