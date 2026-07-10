@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
+import { requireEnv } from '../common/require-env';
 
 @Injectable()
 export class UploadService {
@@ -7,9 +8,9 @@ export class UploadService {
 
   private getCloudinary() {
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'ddoloafbp',
-      api_key:    process.env.CLOUDINARY_API_KEY    || '811795714155685',
-      api_secret: process.env.CLOUDINARY_API_SECRET || 'rOzh4bUMFi3BAySzqSytFeG6ucs',
+      cloud_name: requireEnv('CLOUDINARY_CLOUD_NAME'),
+      api_key:    requireEnv('CLOUDINARY_API_KEY'),
+      api_secret: requireEnv('CLOUDINARY_API_SECRET'),
     });
     return cloudinary;
   }

@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { MailModule } from '../mail/mail.module';
+import { requireEnv } from '../common/require-env';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { MailModule } from '../mail/mail.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'secret',
+        secret: config.get<string>('JWT_SECRET') || requireEnv('JWT_SECRET'),
         signOptions: { expiresIn: '7d' },
       }),
     }),

@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { randomInt } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -54,7 +55,9 @@ export class AuthService {
   async updateProfile(userId: number, data: { name?: string; phone?: string }) {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data,
+      // Explicitly whitelisted — never spread the raw body into Prisma's
+      // data here, `role` and other columns must stay out of reach.
+      data: { name: data.name, phone: data.phone },
       select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
     });
     return user;
@@ -77,7 +80,7 @@ export class AuthService {
     // Удаляем старые токены для этого email
     await this.prisma.passwordResetToken.deleteMany({ where: { email } });
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = String(randomInt(100000, 1000000));
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 минут
 
     await this.prisma.passwordResetToken.create({ data: { email, code, expiresAt } });

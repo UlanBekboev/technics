@@ -9,7 +9,7 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor(private config: ConfigService) {
-    const raw = process.env.RESEND_API_KEY || this.config.get<string>('RESEND_API_KEY') || 're_2neuwP9Z_A4i2Jjo1nQXW74wd93tKuyct';
+    const raw = process.env.RESEND_API_KEY || this.config.get<string>('RESEND_API_KEY') || '';
     const apiKey = raw.replace(/^["']|["']$/g, '').trim();
     if (apiKey) {
       this.resend = new Resend(apiKey);

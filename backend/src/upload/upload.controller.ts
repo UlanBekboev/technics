@@ -1,12 +1,13 @@
 import {
   Controller, Post, Get, UseInterceptors, UploadedFile,
-  UseGuards, BadRequestException, Logger,
+  UseGuards, BadRequestException, ForbiddenException, Logger, Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UploadService } from './upload.service';
 import { memoryStorage } from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
+import { requireEnv } from '../common/require-env';
 
 @Controller('upload')
 export class UploadController {
@@ -14,29 +15,18 @@ export class UploadController {
 
   constructor(private readonly service: UploadService) {}
 
-  /** Временный диагностический эндпоинт — проверяет наличие env vars */
-  @Get('debug')
-  debugEnv() {
-    const cn = process.env.CLOUDINARY_CLOUD_NAME;
-    const ak = process.env.CLOUDINARY_API_KEY;
-    const as = process.env.CLOUDINARY_API_SECRET;
-    return {
-      CLOUDINARY_CLOUD_NAME: cn ? `"${cn}"` : '❌ NOT SET',
-      CLOUDINARY_API_KEY:    ak ? `"${ak.slice(0, 4)}..."` : '❌ NOT SET',
-      CLOUDINARY_API_SECRET: as ? `"${as.slice(0, 4)}..."` : '❌ NOT SET',
-    };
-  }
-
   /**
    * Генерирует подпись для прямой загрузки из браузера в Cloudinary.
    * Не делает сетевых запросов — только крипто.
    */
   @Get('cloudinary-params')
   @UseGuards(JwtAuthGuard)
-  getCloudinaryParams() {
-    const cloudName  = process.env.CLOUDINARY_CLOUD_NAME  || 'ddoloafbp';
-    const apiKey     = process.env.CLOUDINARY_API_KEY     || '811795714155685';
-    const apiSecret  = process.env.CLOUDINARY_API_SECRET  || 'rOzh4bUMFi3BAySzqSytFeG6ucs';
+  getCloudinaryParams(@Request() req: any) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException();
+
+    const cloudName  = requireEnv('CLOUDINARY_CLOUD_NAME');
+    const apiKey     = requireEnv('CLOUDINARY_API_KEY');
+    const apiSecret  = requireEnv('CLOUDINARY_API_SECRET');
     const folder     = 'technics/products';
     const timestamp  = Math.round(Date.now() / 1000);
 

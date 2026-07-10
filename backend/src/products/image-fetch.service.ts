@@ -1,6 +1,52 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import axios from 'axios';
 import { v2 as cloudinary } from 'cloudinary';
+import * as dns from 'dns';
+import * as net from 'net';
+import { requireEnv } from '../common/require-env';
+
+/** Blocks SSRF: refuses to fetch URLs that resolve to loopback/private/link-local addresses. */
+async function assertPublicHttpUrl(rawUrl: string): Promise<void> {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new BadRequestException('Некорректный URL');
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new BadRequestException('Разрешены только http/https ссылки');
+  }
+  const hostname = url.hostname.toLowerCase();
+  if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
+    throw new BadRequestException('Недопустимый адрес');
+  }
+
+  const addresses = net.isIP(hostname)
+    ? [hostname]
+    : (await dns.promises.lookup(hostname, { all: true })).map((a) => a.address);
+
+  for (const addr of addresses) {
+    if (isPrivateOrLoopback(addr)) {
+      throw new BadRequestException('Недопустимый адрес');
+    }
+  }
+}
+
+function isPrivateOrLoopback(ip: string): boolean {
+  if (net.isIPv4(ip)) {
+    const [a, b] = ip.split('.').map(Number);
+    return (
+      a === 127 || // loopback
+      a === 10 || // 10.0.0.0/8
+      (a === 172 && b >= 16 && b <= 31) || // 172.16.0.0/12
+      (a === 192 && b === 168) || // 192.168.0.0/16
+      (a === 169 && b === 254) || // 169.254.0.0/16 (incl. cloud metadata)
+      a === 0
+    );
+  }
+  const lower = ip.toLowerCase();
+  return lower === '::1' || lower.startsWith('fc') || lower.startsWith('fd') || lower.startsWith('fe80');
+}
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
@@ -161,6 +207,7 @@ export class ImageFetchService {
    * Сначала пробует og:image, затем ищет крупные <img>.
    */
   private async extractProductImage(pageUrl: string): Promise<string | null> {
+    await assertPublicHttpUrl(pageUrl);
     const { data: html } = await axios.get(pageUrl, {
       headers: {
         'User-Agent': UA,
@@ -275,6 +322,7 @@ export class ImageFetchService {
   // ── Download & upload ────────────────────────────────────────────
 
   private async download(url: string): Promise<Buffer> {
+    await assertPublicHttpUrl(url);
     const { data } = await axios.get(url, {
       responseType: 'arraybuffer',
       timeout: 12_000,
@@ -288,9 +336,9 @@ export class ImageFetchService {
 
   private upload(buffer: Buffer, productId: number): Promise<string> {
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'ddoloafbp',
-      api_key:    process.env.CLOUDINARY_API_KEY    || '811795714155685',
-      api_secret: process.env.CLOUDINARY_API_SECRET || 'rOzh4bUMFi3BAySzqSytFeG6ucs',
+      cloud_name: requireEnv('CLOUDINARY_CLOUD_NAME'),
+      api_key:    requireEnv('CLOUDINARY_API_KEY'),
+      api_secret: requireEnv('CLOUDINARY_API_SECRET'),
     });
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
