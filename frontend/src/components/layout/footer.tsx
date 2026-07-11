@@ -47,7 +47,7 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>Каталог</h3>
             <ul className="space-y-2">
               {LINKS.catalog.map((l) => (
-                <li key={l.href}>
+                <li key={l.label}>
                   <Link href={l.href} className="text-sm transition-colors hover:text-primary-foreground" style={{ color: "rgba(255,255,255,0.7)" }}>
                     {l.label}
                   </Link>
@@ -61,7 +61,7 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>Информация</h3>
             <ul className="space-y-2">
               {LINKS.info.map((l) => (
-                <li key={l.href}>
+                <li key={l.label}>
                   <Link href={l.href} className="text-sm transition-colors hover:text-primary-foreground" style={{ color: "rgba(255,255,255,0.7)" }}>
                     {l.label}
                   </Link>
