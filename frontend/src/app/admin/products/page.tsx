@@ -32,6 +32,9 @@ type Product = {
   category: Category;
   brand?: Brand;
   images: ProductImage[];
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
 };
 
 const EMPTY_FORM = {
@@ -46,6 +49,9 @@ const EMPTY_FORM = {
   categoryId: '',
   brandId: '',
   images: [] as ProductImage[],
+  seoTitle: '',
+  seoDescription: '',
+  seoKeywords: '',
 };
 
 function slugify(s: string) {
@@ -128,6 +134,9 @@ export default function AdminProductsPage() {
       categoryId: String(p.categoryId),
       brandId: p.brandId ? String(p.brandId) : '',
       images: p.images,
+      seoTitle: p.seoTitle ?? '',
+      seoDescription: p.seoDescription ?? '',
+      seoKeywords: p.seoKeywords ?? '',
     });
     setSlugLocked(true);
     setShowForm(true);
@@ -189,6 +198,9 @@ export default function AdminProductsPage() {
         categoryId: parseInt(form.categoryId),
         brandId: form.brandId ? parseInt(form.brandId) : undefined,
         images: form.images,
+        seoTitle: form.seoTitle || undefined,
+        seoDescription: form.seoDescription || undefined,
+        seoKeywords: form.seoKeywords || undefined,
       };
       if (editing) {
         const updated = await adminUpdateProduct(editing.id, payload);
@@ -590,6 +602,39 @@ export default function AdminProductsPage() {
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
                   />
+                </div>
+                <div className="col-span-2 space-y-3 rounded-lg border border-gray-100 bg-gray-50/60 p-3">
+                  <p className="text-xs font-semibold text-gray-500">
+                    SEO <span className="font-normal text-gray-400">(необязательно — переопределяет автоматический заголовок/описание в поиске)</span>
+                  </p>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">SEO-заголовок</label>
+                    <input
+                      value={form.seoTitle}
+                      onChange={(e) => setForm((f) => ({ ...f, seoTitle: e.target.value }))}
+                      placeholder={form.name ? `${form.name} — купить в Бишкеке | TECHNICS` : ''}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">SEO-описание</label>
+                    <textarea
+                      rows={2}
+                      value={form.seoDescription}
+                      onChange={(e) => setForm((f) => ({ ...f, seoDescription: e.target.value }))}
+                      placeholder="Показывается в результатах поиска под заголовком"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Ключевые слова</label>
+                    <input
+                      value={form.seoKeywords}
+                      onChange={(e) => setForm((f) => ({ ...f, seoKeywords: e.target.value }))}
+                      placeholder="ip камера, видеонаблюдение, hikvision"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
                 </div>
               </div>
 

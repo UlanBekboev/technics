@@ -22,6 +22,10 @@ export interface Product {
   images: ProductImage[];
   specs: ProductSpec[];
   createdAt: string;
+  updatedAt?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 export interface ProductImage {
