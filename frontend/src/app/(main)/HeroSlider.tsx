@@ -47,20 +47,20 @@ export default function HeroSlider({ banners }: { banners: Banner[] }) {
 
   if (!banners.length) {
     return (
-      <div className="relative flex h-[300px] items-center overflow-hidden rounded-2xl bg-primary sm:h-[400px] lg:h-[480px]">
-        <div className="relative z-10 max-w-2xl px-8 sm:px-12">
-          <div className="mb-4 inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium text-white">
+      <div className="relative flex h-[260px] items-center overflow-hidden rounded-2xl bg-primary xs:h-[300px] sm:h-[400px] lg:h-[480px]">
+        <div className="relative z-10 max-w-2xl px-5 xs:px-8 sm:px-12">
+          <div className="mb-2.5 inline-block rounded-full bg-white/20 px-3 py-1 text-[11px] font-medium leading-none text-white xs:mb-4 xs:px-4 xs:py-1.5 xs:text-sm">
             Системы безопасности
           </div>
-          <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
+          <h1 className="text-xl font-black leading-[1.15] text-white xs:text-2xl xs:leading-tight sm:text-4xl lg:text-5xl">
             Видеонаблюдение<br />и IP-камеры
           </h1>
-          <p className="mt-4 text-white/80 sm:text-lg">
+          <p className="mt-2 text-xs leading-snug text-white/80 xs:mt-4 xs:text-sm sm:text-lg sm:leading-normal">
             846 товаров от ведущих производителей. Установка под ключ.
           </p>
           <Link
             href="/catalog"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary transition-transform hover:scale-105"
+            className="mt-3.5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-primary transition-transform hover:scale-105 xs:mt-6 xs:px-6 xs:py-3 xs:text-sm"
           >
             Перейти в каталог <ArrowRight className="h-4 w-4" />
           </Link>
@@ -77,7 +77,7 @@ export default function HeroSlider({ banners }: { banners: Banner[] }) {
   const overlay = getOverlay(b.overlayStyle);
 
   return (
-    <div className="relative h-[300px] overflow-hidden rounded-2xl sm:h-[400px] lg:h-[480px]"
+    <div className="relative h-[260px] overflow-hidden rounded-2xl xs:h-[300px] sm:h-[400px] lg:h-[480px]"
       style={{ background: overlay.containerBg }}>
       {currentImg && (
         <Image src={currentImg} alt={b.title} fill className="object-cover transition-opacity duration-300"
@@ -86,13 +86,13 @@ export default function HeroSlider({ banners }: { banners: Banner[] }) {
       {overlay.gradient && (
         <div className="absolute inset-0" style={{ background: overlay.gradient }} />
       )}
-      <div className="relative z-10 flex h-full max-w-2xl flex-col justify-center px-8 sm:px-12">
+      <div className="relative z-10 flex h-full max-w-2xl flex-col justify-center px-5 xs:px-8 sm:px-12">
         {idx === 0
-          ? <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">{b.title}</h1>
-          : <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">{b.title}</h2>}
-        {b.subtitle && <p className="mt-4 text-white/80 sm:text-lg">{b.subtitle}</p>}
+          ? <h1 className="text-xl font-black leading-[1.15] text-white xs:text-2xl xs:leading-tight sm:text-4xl lg:text-5xl">{b.title}</h1>
+          : <h2 className="text-xl font-black leading-[1.15] text-white xs:text-2xl xs:leading-tight sm:text-4xl lg:text-5xl">{b.title}</h2>}
+        {b.subtitle && <p className="mt-2 text-xs leading-snug text-white/80 xs:mt-4 xs:text-sm sm:text-lg sm:leading-normal">{b.subtitle}</p>}
         {b.buttonText && b.buttonUrl && (
-          <Link href={b.buttonUrl} className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary hover:scale-105 transition-transform">
+          <Link href={b.buttonUrl} className="mt-3.5 inline-flex w-fit items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-primary hover:scale-105 transition-transform xs:mt-6 xs:px-6 xs:py-3 xs:text-sm">
             {b.buttonText} <ArrowRight className="h-4 w-4" />
           </Link>
         )}
