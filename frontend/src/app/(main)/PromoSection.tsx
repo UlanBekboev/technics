@@ -4,9 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Wifi, Camera, Tag } from "lucide-react";
 import { useSiteSettings } from "@/context/SiteSettingsContext";
+import { parsePromoCameras } from "@/lib/settings";
+import { EZVIZ_CAMERAS_DEFAULT, TVT_CAMERAS_DEFAULT } from "@/lib/promo-defaults";
+
+function minPriceLabel(prices: (number | undefined)[], fallback: string): string {
+  const min = Math.min(...prices.filter((p): p is number => !!p && p > 0));
+  return Number.isFinite(min) ? `от ${min.toLocaleString("ru")} сом` : fallback;
+}
 
 export default function PromoSection() {
   const s = useSiteSettings();
+  const ezvizCameras = parsePromoCameras(s.promo_ezviz_cameras, EZVIZ_CAMERAS_DEFAULT);
+  const tvtCameras = parsePromoCameras(s.promo_tvt_cameras, TVT_CAMERAS_DEFAULT);
 
   const promoItems = [
     {
@@ -15,13 +24,8 @@ export default function PromoSection() {
       label: "АКЦИЯ",
       title: "Wi-Fi камеры EZVIZ",
       subtitle: "Без прокладки кабеля · с установкой",
-      imgs: [
-        s["promo_ezviz_0"] || "https://emin.kg/files/9b29d4867b37401aae450b8c46fbb829",
-        s["promo_ezviz_1"] || "https://emin.kg/files/9108eb5fc94d46f99b18d5f79aed7f2e",
-        s["promo_ezviz_2"] || "https://emin.kg/files/1153f9859209440296d7b7c12a59aa33",
-        s["promo_ezviz_3"] || "",
-      ],
-      price: "от 2 350 сом",
+      imgs: ezvizCameras.slice(0, 4).map((c) => c.image),
+      price: minPriceLabel(ezvizCameras.map((c) => c.price), "от 2 350 сом"),
     },
     {
       gradient: "linear-gradient(135deg,#003d8f,#0057B8)",
@@ -29,11 +33,8 @@ export default function PromoSection() {
       label: "АКЦИЯ",
       title: "Видеонаблюдение под ключ",
       subtitle: "4МР · TVT · NVR + PoE · 4 камеры",
-      imgs: [
-        s["promo_tvt_0"] || "",
-        s["promo_tvt_1"] || "",
-      ],
-      price: "от 21 900 сом",
+      imgs: tvtCameras.slice(0, 4).map((c) => c.image),
+      price: minPriceLabel(tvtCameras.map((c) => c.price), "от 21 900 сом"),
     },
   ];
 

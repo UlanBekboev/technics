@@ -5,60 +5,8 @@ import Link from "next/link";
 import { Phone, CheckCircle, Tag, Wifi, Camera, ShoppingCart, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSettings } from "@/lib/api";
-
-const EZVIZ_CAMERAS_DEFAULT = [
-  {
-    id: 2733,
-    slug: "ip-camera-ezviz-h6c-pro1080",
-    name: "EZVIZ H6c Pro",
-    type: "Кубическая поворотная 2МР",
-    img: "https://emin.kg/files/9b29d4867b37401aae450b8c46fbb829",
-    price: 2350,
-    specs: ["2MP / 1080p", "IR ночь 10м", "Wi-Fi", "MicroSD", "Микрофон + Динамик"],
-  },
-  {
-    id: 2771,
-    slug: "wifi-kamera-ezviz-h6c-pro-3k",
-    name: "EZVIZ H6C Pro 3K",
-    type: "Кубическая поворотная 5МР",
-    img: "https://emin.kg/files/9108eb5fc94d46f99b18d5f79aed7f2e",
-    price: 3200,
-    specs: ["5MP / 3K", "IR ночь 10м", "Wi-Fi", "MicroSD", "Микрофон + Динамик"],
-  },
-  {
-    id: 2318,
-    slug: "ip-camera-ezviz-h8c-pro-3k",
-    name: "EZVIZ H8c PRO 3K",
-    type: "Уличная поворотная 5МР",
-    img: "https://emin.kg/files/1153f9859209440296d7b7c12a59aa33",
-    price: 4600,
-    specs: ["5MP / 3K", "LED ночь 30м", "Wi-Fi", "MicroSD", "Микрофон + Динамик"],
-  },
-  {
-    id: 0,
-    slug: "",
-    name: "EZVIZ H1c",
-    type: "Кубическая 2МР внутренняя",
-    img: "",
-    price: 0,
-    specs: ["2MP / 1080p", "IR ночь", "Wi-Fi", "MicroSD", "Magnetic Base"],
-  },
-];
-
-const TVT_CAMERAS_DEFAULT = [
-  {
-    name: "TVT TD-9540S5L-D",
-    type: "4MP купольная уличная Dual Illumination",
-    img: "",
-    specs: ["4MP / 2560×1440", "Dual Illumination", "Микрофон", "IP67", "H.265+"],
-  },
-  {
-    name: "TVT TD-9440S5L-D",
-    type: "4MP цилиндрическая уличная",
-    img: "",
-    specs: ["4MP / 2560×1440", "Dual Illumination", "Микрофон", "IP67", "H.265+"],
-  },
-];
+import { parsePromoCameras } from "@/lib/settings";
+import { EZVIZ_CAMERAS_DEFAULT, TVT_CAMERAS_DEFAULT } from "@/lib/promo-defaults";
 
 const TVT_PACKAGES = [
   { label: "Комплект с HDD 500 ГБ", note: "Запись до 5 дней", price: 21900 },
@@ -105,46 +53,15 @@ function CTA({ guarantee }: { guarantee: string }) {
 }
 
 export default function AktsiiPage() {
-  const [ezvizImgs, setEzvizImgs] = useState<string[]>(["", "", "", ""]);
-  const [tvtImgs, setTvtImgs] = useState<string[]>(["", ""]);
-  const [ezvizNames, setEzvizNames] = useState<string[]>(["", "", "", ""]);
-  const [tvtNames, setTvtNames] = useState<string[]>(["", ""]);
+  const [EZVIZ_CAMERAS, setEzvizCameras] = useState(EZVIZ_CAMERAS_DEFAULT);
+  const [TVT_CAMERAS, setTvtCameras] = useState(TVT_CAMERAS_DEFAULT);
 
   useEffect(() => {
     getSettings().then((s) => {
-      setEzvizImgs([
-        s["promo_ezviz_0"] || EZVIZ_CAMERAS_DEFAULT[0].img,
-        s["promo_ezviz_1"] || EZVIZ_CAMERAS_DEFAULT[1].img,
-        s["promo_ezviz_2"] || EZVIZ_CAMERAS_DEFAULT[2].img,
-        s["promo_ezviz_3"] || EZVIZ_CAMERAS_DEFAULT[3].img,
-      ]);
-      setTvtImgs([
-        s["promo_tvt_0"] || TVT_CAMERAS_DEFAULT[0].img,
-        s["promo_tvt_1"] || TVT_CAMERAS_DEFAULT[1].img,
-      ]);
-      setEzvizNames([
-        s["promo_ezviz_0_name"] || "",
-        s["promo_ezviz_1_name"] || "",
-        s["promo_ezviz_2_name"] || "",
-        s["promo_ezviz_3_name"] || "",
-      ]);
-      setTvtNames([
-        s["promo_tvt_0_name"] || "",
-        s["promo_tvt_1_name"] || "",
-      ]);
+      setEzvizCameras(parsePromoCameras(s.promo_ezviz_cameras, EZVIZ_CAMERAS_DEFAULT));
+      setTvtCameras(parsePromoCameras(s.promo_tvt_cameras, TVT_CAMERAS_DEFAULT));
     }).catch(() => {});
   }, []);
-
-  const EZVIZ_CAMERAS = EZVIZ_CAMERAS_DEFAULT.map((c, i) => ({
-    ...c,
-    img: ezvizImgs[i] ?? c.img,
-    name: ezvizNames[i] || c.name,
-  }));
-  const TVT_CAMERAS = TVT_CAMERAS_DEFAULT.map((c, i) => ({
-    ...c,
-    img: tvtImgs[i] ?? c.img,
-    name: tvtNames[i] || c.name,
-  }));
 
   return (
     <div className="min-h-screen py-8" style={{ background: "hsl(var(--secondary)/.3)" }}>
@@ -182,8 +99,8 @@ export default function AktsiiPage() {
                 const inner = (
                   <>
                     <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-secondary flex items-center justify-center">
-                      {cam.img
-                        ? <Image src={cam.img} alt={cam.name} fill className="object-contain p-1" unoptimized />
+                      {cam.image
+                        ? <Image src={cam.image} alt={cam.name} fill className="object-contain p-1" unoptimized />
                         : <Wifi className="h-8 w-8 text-muted-foreground/30" />}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -196,7 +113,7 @@ export default function AktsiiPage() {
                           </li>
                         ))}
                       </ul>
-                      {cam.price > 0 && (
+                      {!!cam.price && cam.price > 0 && (
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-black text-primary">{cam.price.toLocaleString("ru")}</span>
                           <span className="text-xs text-muted-foreground">сом</span>
@@ -253,8 +170,8 @@ export default function AktsiiPage() {
               {TVT_CAMERAS.map((cam) => (
                 <div key={cam.name} className="rounded-2xl border p-4 text-center" style={{ borderColor: "hsl(var(--border))" }}>
                   <div className="relative mx-auto mb-3 h-28 w-28 overflow-hidden rounded-xl bg-secondary flex items-center justify-center">
-                    {cam.img
-                      ? <Image src={cam.img} alt={cam.name} fill className="object-contain p-2" unoptimized />
+                    {cam.image
+                      ? <Image src={cam.image} alt={cam.name} fill className="object-contain p-2" unoptimized />
                       : <Camera className="h-10 w-10 text-muted-foreground/40" />}
                   </div>
                   <p className="font-bold text-sm">{cam.name}</p>

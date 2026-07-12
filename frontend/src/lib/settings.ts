@@ -3,6 +3,15 @@ export interface AboutStat {
   label: string;
 }
 
+export interface PromoCamera {
+  name: string;
+  type: string;
+  image: string;
+  price?: number;
+  specs: string[];
+  slug?: string;
+}
+
 /** Settings stores lists/objects as JSON-stringified values in a flat string map. */
 export function parseJsonSetting<T>(raw: string | undefined, fallback: T): T {
   if (!raw) return fallback;
@@ -19,4 +28,8 @@ export function parseList(raw: string | undefined): string[] {
 
 export function parseStats(raw: string | undefined): AboutStat[] {
   return parseJsonSetting<AboutStat[]>(raw, []);
+}
+
+export function parsePromoCameras(raw: string | undefined, fallback: PromoCamera[] = []): PromoCamera[] {
+  return parseJsonSetting<PromoCamera[]>(raw, fallback);
 }
