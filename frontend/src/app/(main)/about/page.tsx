@@ -6,7 +6,11 @@ import { parseStats } from "@/lib/settings";
 import { absoluteUrl, SITE_NAME } from "@/lib/seo";
 import type { Brand } from "@/types";
 
-export const revalidate = 300;
+// Forced dynamic rather than ISR: static prerendering of this route has
+// intermittently baked in stale client-chunk hashes at build time (Next
+// 16.2.5), breaking the page after deploy until a lucky rebuild. Rendering
+// per-request avoids the static-HTML code path entirely.
+export const dynamic = "force-dynamic";
 
 const ADVANTAGES = [
   { icon: Truck, title: "Быстрая доставка", text: "По Бишкеку — в день заказа, в регионы — транспортными компаниями." },

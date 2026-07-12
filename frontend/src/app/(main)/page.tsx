@@ -9,7 +9,11 @@ import HeroSlider from "./HeroSlider";
 import PromoSection from "./PromoSection";
 import ProductSection from "./ProductSection";
 
-export const revalidate = 300;
+// Forced dynamic rather than ISR: static prerendering of this route has
+// intermittently baked in stale client-chunk hashes at build time (Next
+// 16.2.5), breaking the page after deploy until a lucky rebuild. Rendering
+// per-request avoids the static-HTML code path entirely.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl("/") },
