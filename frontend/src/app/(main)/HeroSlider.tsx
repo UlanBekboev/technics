@@ -118,11 +118,11 @@ export default function HeroSlider({ banners }: { banners: Banner[] }) {
       {banners.length > 1 && (
         <>
           <button onClick={() => setIdx((i) => (i - 1 + banners.length) % banners.length)}
-            className="absolute left-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur hover:bg-white/30">
+            className="absolute left-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30">
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button onClick={() => setIdx((i) => (i + 1) % banners.length)}
-            className="absolute right-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur hover:bg-white/30">
+            className="absolute right-3 top-1/2 z-20 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30">
             <ChevronRight className="h-5 w-5" />
           </button>
           <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 flex gap-1.5">
