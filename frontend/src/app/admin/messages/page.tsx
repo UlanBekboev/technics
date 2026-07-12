@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import { adminGetMessages, adminMarkMessageRead, adminDeleteMessage, adminReplyMessage } from "@/lib/api";
 import { MessageSquare, Phone, Trash2, Clock, CheckCircle, Send, ChevronDown, ChevronUp } from "lucide-react";
@@ -179,15 +178,14 @@ function MessageCard({
 }
 
 export default function AdminMessagesPage() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread" | "replied">("all");
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== "ADMIN") return;
     adminGetMessages().then((data) => { setMessages(data); setLoading(false); }).catch(() => setLoading(false));
   }, [user]);
 

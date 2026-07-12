@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ShoppingBag, ListOrdered, Tag, Package,
@@ -21,7 +20,6 @@ const ORDER_STATUSES: Record<string, { label: string; cls: string }> = {
 };
 
 export default function AdminDashboard() {
-  const router = useRouter();
   const { user } = useAuthStore();
 
   const [stats, setStats] = useState({
@@ -32,8 +30,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== "ADMIN") return;
 
     Promise.allSettled([
       getAllOrders(),

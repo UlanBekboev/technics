@@ -14,6 +14,7 @@ interface User {
 interface AuthStore {
   user: User | null;
   token: string | null;
+  hasHydrated: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   isAuthenticated: () => boolean;
@@ -24,6 +25,7 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       user: null,
       token: null,
+      hasHydrated: false,
       setAuth: (user, token) => {
         localStorage.setItem('token', token);
         useFavoritesStore.getState().setIds([]);
@@ -37,6 +39,14 @@ export const useAuthStore = create<AuthStore>()(
       },
       isAuthenticated: () => !!get().token,
     }),
-    { name: 'auth' },
+    {
+      name: 'auth',
+      // Guards (e.g. admin layout) must wait for this before redirecting on a
+      // missing user — otherwise a fresh page load reads `user: null` before
+      // localStorage has been read back in yet, and bounces straight to /login.
+      onRehydrateStorage: () => () => {
+        useAuthStore.setState({ hasHydrated: true });
+      },
+    },
   ),
 );

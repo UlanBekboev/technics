@@ -7,7 +7,7 @@ import {
   Image, Settings, MessageSquare, Layers, Megaphone
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -25,16 +25,13 @@ const NAV = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
+  const { user, logout, hasHydrated } = useAuthStore();
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!hasHydrated) return;
     if (!user) router.push("/login");
     else if (user.role !== "ADMIN") router.push("/");
-  }, [user, mounted]);
+  }, [user, hasHydrated]);
 
   const handleLogout = () => {
     logout();

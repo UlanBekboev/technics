@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, X, Loader2, Search, Layers } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
@@ -18,7 +17,6 @@ function slugify(s: string) {
 }
 
 export default function AdminBrandsPage() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,8 +28,8 @@ export default function AdminBrandsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== "ADMIN") return;
     getBrands().then(setBrands).catch(() => {}).finally(() => setLoading(false));
   }, [user]);
 

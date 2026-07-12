@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import {
   adminGetProducts,
@@ -64,7 +63,6 @@ function slugify(s: string) {
 
 export default function AdminProductsPage() {
   const { user } = useAuthStore();
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -87,8 +85,8 @@ export default function AdminProductsPage() {
   const imgFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
-    if (user.role !== 'ADMIN') { router.push('/'); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== 'ADMIN') return;
     load();
   }, [user]);
 

@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { getCategoriesFlat, adminCreateCategory, adminUpdateCategory, adminDeleteCategory } from '@/lib/api';
 import { Pencil, Trash2, Plus, X, Loader2, icons } from 'lucide-react';
@@ -27,7 +26,6 @@ function slugify(s: string) {
 
 export default function AdminCategoriesPage() {
   const { user } = useAuthStore();
-  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -38,8 +36,8 @@ export default function AdminCategoriesPage() {
   const [deleting, setDeleting] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
-    if (user.role !== 'ADMIN') { router.push('/'); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== 'ADMIN') return;
     load();
   }, [user]);
 

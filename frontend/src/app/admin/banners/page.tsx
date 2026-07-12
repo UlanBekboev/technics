@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, Image as ImageIcon, Loader2, ArrowRight } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
@@ -61,7 +60,6 @@ const EMPTY_FORM = {
 };
 
 export default function AdminBannersPage() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,8 +71,8 @@ export default function AdminBannersPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== "ADMIN") return;
     load();
   }, [user]);
 

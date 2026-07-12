@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Save, Loader2, Plus, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { getSettings, adminUpdateSettings } from "@/lib/api";
@@ -24,7 +23,6 @@ const GENERAL_FIELDS: { key: string; label: string; type?: string; placeholder?:
 ];
 
 export default function AdminSettingsPage() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [phones, setPhones] = useState<string[]>([]);
@@ -35,8 +33,10 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
+    // Auth/role redirect is handled by admin/layout.tsx (it waits for the
+    // auth store to rehydrate first — redirecting here too raced it and
+    // bounced admins straight back to /login on a fresh page load).
+    if (!user || user.role !== "ADMIN") return;
     getSettings().then((s) => {
       setSettings(s);
       setPhones(parseList(s.sitePhones));

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Wifi, Camera, Save, ImageIcon, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
@@ -116,7 +115,6 @@ function SlotCard({
 }
 
 export default function AdminAktsiiPage() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const [images, setImages] = useState<Record<string, string>>({});
   const [names, setNames] = useState<Record<string, string>>({});
@@ -129,8 +127,8 @@ export default function AdminAktsiiPage() {
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return; }
-    if (user.role !== "ADMIN") { router.push("/"); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== "ADMIN") return;
     getSettings().then((settings) => {
       const imgs: Record<string, string> = {};
       const nms: Record<string, string> = {};

@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { getAllOrders, updateOrderStatus } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 
@@ -21,11 +20,10 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
   const { user } = useAuthStore();
-  const router = useRouter();
 
   useEffect(() => {
-    if (!user) { router.push('/login'); return; }
-    if (user.role !== 'ADMIN') { router.push('/'); return; }
+    // Auth/role redirect is handled by admin/layout.tsx.
+    if (!user || user.role !== 'ADMIN') return;
     getAllOrders()
       .then(setOrders)
       .catch(() => {})
