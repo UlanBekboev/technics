@@ -8,43 +8,47 @@ import type { Product } from "@/types";
 
 const CARD_W = 220;
 const GAP = 16;
+const STEP = CARD_W + GAP;
 
 export default function ProductSection({ title, products, loading, startDelay = 0 }: { title: string; products: Product[]; loading?: boolean; startDelay?: number }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [idx, setIdx] = useState(0);
-  const [visible, setVisible] = useState(5);
-
-  // считаем сколько целых карточек помещается в контейнер
-  useEffect(() => {
-    const update = () => {
-      if (!wrapRef.current) return;
-      const w = wrapRef.current.offsetWidth;
-      setVisible(Math.max(1, Math.floor((w + GAP) / (CARD_W + GAP))));
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    if (wrapRef.current) ro.observe(wrapRef.current);
-    return () => ro.disconnect();
-  }, []);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
 
   const total = loading ? 0 : products.length;
-  const maxIdx = Math.max(0, total - visible);
 
-  const goTo = (i: number) => setIdx(Math.max(0, Math.min(i, maxIdx)));
+  const updateEdges = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 4);
+    setAtEnd(el.scrollLeft >= el.scrollWidth - el.clientWidth - 4);
+  };
 
-  // авто-прокрутка каждые 3 секунды, со своим стартовым сдвигом
+  useEffect(() => {
+    updateEdges();
+  }, [loading, total]);
+
+  const scrollByStep = (dir: 1 | -1) => {
+    scrollRef.current?.scrollBy({ left: dir * STEP, behavior: "smooth" });
+  };
+
+  // авто-прокрутка каждые 3 секунды, со своим стартовым сдвигом; зацикливается в начало у конца
   useEffect(() => {
     if (loading || total < 2) return;
     let interval: ReturnType<typeof setInterval>;
     const timeout = setTimeout(() => {
       interval = setInterval(() => {
-        setIdx((prev) => (prev >= maxIdx ? 0 : prev + 1));
+        const el = scrollRef.current;
+        if (!el) return;
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 4) {
+          el.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          el.scrollBy({ left: STEP, behavior: "smooth" });
+        }
       }, 3000);
     }, startDelay);
     return () => { clearTimeout(timeout); clearInterval(interval); };
-  }, [loading, total, maxIdx, startDelay]);
-
-  const offset = idx * (CARD_W + GAP);
+  }, [loading, total, startDelay]);
 
   return (
     <section>
@@ -52,17 +56,17 @@ export default function ProductSection({ title, products, loading, startDelay = 
         <h2 className="text-xl font-extrabold sm:text-2xl">{title}</h2>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => goTo(idx - 1)}
-            disabled={idx === 0}
-            className="flex h-8 w-8 items-center justify-center rounded-full border transition-colors hover:bg-secondary disabled:opacity-30"
+            onClick={() => scrollByStep(-1)}
+            disabled={atStart}
+            className="hidden h-8 w-8 items-center justify-center rounded-full border transition-colors hover:bg-secondary disabled:opacity-30 sm:flex"
             style={{ borderColor: "hsl(var(--border))" }}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
-            onClick={() => goTo(idx + 1)}
-            disabled={idx >= maxIdx}
-            className="flex h-8 w-8 items-center justify-center rounded-full border transition-colors hover:bg-secondary disabled:opacity-30"
+            onClick={() => scrollByStep(1)}
+            disabled={atEnd}
+            className="hidden h-8 w-8 items-center justify-center rounded-full border transition-colors hover:bg-secondary disabled:opacity-30 sm:flex"
             style={{ borderColor: "hsl(var(--border))" }}
           >
             <ChevronRight className="h-4 w-4" />
@@ -73,23 +77,22 @@ export default function ProductSection({ title, products, loading, startDelay = 
         </div>
       </div>
 
-      {/* overflow:hidden обрезает по границе, transform двигает точно на CARD_W+GAP */}
-      <div ref={wrapRef} className="overflow-hidden">
-        <div
-          className="flex gap-4 transition-transform duration-500 ease-in-out pb-2"
-          style={{ transform: `translateX(-${offset}px)` }}
-        >
-          {loading
-            ? Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="w-[220px] shrink-0"><ProductCardSkeleton /></div>
-              ))
-            : products.map((p) => (
-                <div key={p.id} className="w-[220px] shrink-0">
-                  <ProductCard product={p} />
-                </div>
-              ))
-          }
-        </div>
+      {/* Нативный горизонтальный скролл — свайп пальцем на мобильных "из коробки" */}
+      <div
+        ref={scrollRef}
+        onScroll={updateEdges}
+        className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2"
+      >
+        {loading
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="w-[220px] shrink-0 snap-start"><ProductCardSkeleton /></div>
+            ))
+          : products.map((p) => (
+              <div key={p.id} className="w-[220px] shrink-0 snap-start">
+                <ProductCard product={p} />
+              </div>
+            ))
+        }
       </div>
     </section>
   );
