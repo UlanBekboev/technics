@@ -8,6 +8,7 @@ import type { Product, Category, Banner } from "@/types";
 import HeroSlider from "./HeroSlider";
 import PromoSection from "./PromoSection";
 import ProductSection from "./ProductSection";
+import NewArrivalsGrid from "./NewArrivalsGrid";
 
 // Forced dynamic rather than ISR: static prerendering of this route has
 // intermittently baked in stale client-chunk hashes at build time (Next
@@ -112,6 +113,7 @@ export default async function HomePage() {
 
   const hits: Product[] = hitsRes?.items ?? hitsRes ?? [];
   const newProds: Product[] = newRes?.items ?? newRes ?? [];
+  const newTotal: number = newRes?.total ?? newProds.length;
 
   return (
     <div className="mx-auto max-w-7xl space-y-12 px-4 py-6">
@@ -137,7 +139,7 @@ export default async function HomePage() {
 
       <ProductSection title="Хиты продаж" products={hits} startDelay={0} />
 
-      <ProductSection title="Новинки" products={newProds} startDelay={1500} />
+      <NewArrivalsGrid initialProducts={newProds} initialTotal={newTotal} />
     </div>
   );
 }
