@@ -7,6 +7,7 @@ import { ShoppingCart, Heart, Camera, Star, ChevronRight, Check } from "lucide-r
 import { addToCart as apiAddToCart, toggleFavorite as apiToggleFavorite } from "@/lib/api";
 import { useCartStore } from "@/store/cart";
 import { useFavoritesStore } from "@/store/favorites";
+import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/types";
@@ -95,7 +96,10 @@ export default function ProductView({ product }: { product: Product }) {
           images: product.images ?? [],
         },
       });
-    } catch {}
+      toast.success("Товар добавлен в корзину");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Не удалось добавить товар в корзину");
+    }
     setAdding(false);
   };
 

@@ -40,8 +40,8 @@ export default function CheckoutPage() {
       await createOrder(address, comment);
       clearCart();
       setSuccess(true);
-    } catch {
-      setError('Ошибка при оформлении заказа. Войдите в аккаунт.');
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Ошибка при оформлении заказа. Войдите в аккаунт.');
     } finally {
       setLoading(false);
     }

@@ -9,6 +9,7 @@ import { useAuthStore } from "@/store/auth";
 import { updateCartItem, removeFromCart, createOrder } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/toast";
 
 export default function CartPage() {
   const { items, updateItem, removeItem, clearCart, total } = useCartStore();
@@ -20,8 +21,14 @@ export default function CartPage() {
 
   const handleQuantity = async (productId: number, quantity: number) => {
     if (quantity < 1) return;
+    const prevQuantity = items.find((i) => i.productId === productId)?.quantity;
     updateItem(productId, quantity);
-    try { await updateCartItem(productId, quantity); } catch {}
+    try {
+      await updateCartItem(productId, quantity);
+    } catch (err: any) {
+      if (prevQuantity !== undefined) updateItem(productId, prevQuantity);
+      toast.error(err?.response?.data?.message ?? "Не удалось изменить количество");
+    }
   };
 
   const handleRemove = async (productId: number) => {
@@ -36,7 +43,9 @@ export default function CartPage() {
       await createOrder(address, comment);
       clearCart();
       setDone(true);
-    } catch {}
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Не удалось оформить заказ");
+    }
     setPlacing(false);
   };
 

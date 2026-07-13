@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "@/store/cart";
+import { toast } from "@/components/ui/toast";
 import type { Product, Category, Brand } from "@/types";
 
 const SORT_OPTIONS = [
@@ -297,7 +298,6 @@ function SkeletonCard() {
   );
 }
 
-/* ─── Pagination ─── */
 /* ─── List-view product row ─── */
 function ProductRow({ product }: { product: Product }) {
   const { addItem } = useCartStore();
@@ -309,8 +309,9 @@ function ProductRow({ product }: { product: Product }) {
     try {
       const item = await addToCart(product.id, 1);
       addItem(item);
-    } catch {
-      addItem({ id: Date.now(), quantity: 1, productId: product.id, product: { id: product.id, name: product.name, slug: product.slug, price: product.price, images: product.images } });
+      toast.success("Товар добавлен в корзину");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Не удалось добавить товар в корзину");
     }
   };
 

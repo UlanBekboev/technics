@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/format";
 import { useFavoritesStore } from "@/store/favorites";
 import { useCartStore } from "@/store/cart";
-import { useToastStore } from "@/store/toast";
+import { toast } from "@/components/ui/toast";
 import { addToCart as apiAddToCart, toggleFavorite as apiToggleFavorite } from "@/lib/api";
 import type { Product } from "@/types";
 
@@ -21,7 +21,6 @@ function discountPercent(price: number, oldPrice?: number | null) {
 export function ProductCard({ product }: { product: Product }) {
   const favs = useFavoritesStore();
   const cart = useCartStore();
-  const { show } = useToastStore();
   const [mounted, setMounted] = useState(false);
   const [adding, setAdding] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -41,25 +40,24 @@ export function ProductCard({ product }: { product: Product }) {
     e.preventDefault();
     if (adding) return;
     setAdding(true);
-    const localItem = {
-      id: Date.now(),
-      quantity: 1,
-      productId: product.id,
-      product: {
-        id: product.id,
-        name: product.name,
-        slug: product.slug,
-        price: Number(product.price),
-        images: product.images ?? [],
-      },
-    };
     try {
       const result = await apiAddToCart(product.id, 1);
-      cart.addItem(result ?? localItem);
-    } catch {
-      cart.addItem(localItem);
+      cart.addItem(result ?? {
+        id: Date.now(),
+        quantity: 1,
+        productId: product.id,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          price: Number(product.price),
+          images: product.images ?? [],
+        },
+      });
+      toast.success("Товар добавлен в корзину");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Не удалось добавить товар в корзину");
     }
-    show("Товар добавлен в корзину");
     setAdding(false);
   };
 
