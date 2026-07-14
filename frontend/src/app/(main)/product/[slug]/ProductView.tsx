@@ -67,6 +67,7 @@ function SpecsTab({ specs }: { specs: { key: string; value: string }[] }) {
 
 export default function ProductView({ product }: { product: Product }) {
   const [adding, setAdding] = useState(false);
+  const [favPending, setFavPending] = useState(false);
   const [tab, setTab] = useState<"desc" | "specs" | "reviews">("desc");
 
   const favs = useFavoritesStore();
@@ -75,8 +76,16 @@ export default function ProductView({ product }: { product: Product }) {
   const isFav = favs.has(product.id);
 
   const handleFav = async () => {
+    if (favPending) return; // block double-clicks — a second request while the first is in flight can race and re-add the item
+    setFavPending(true);
     favs.toggle(product.id);
-    try { await apiToggleFavorite(product.id); } catch {}
+    try {
+      await apiToggleFavorite(product.id);
+    } catch (err: any) {
+      favs.toggle(product.id); // revert the optimistic update — the server didn't confirm it
+      toast.error(err?.response?.data?.message ?? "Не удалось обновить избранное");
+    }
+    setFavPending(false);
   };
 
   const handleAddToCart = async () => {
@@ -193,11 +202,12 @@ export default function ProductView({ product }: { product: Product }) {
             </button>
             <button
               onClick={handleFav}
+              disabled={favPending}
               className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-xl border-2 transition-colors",
+                "flex h-12 w-12 items-center justify-center rounded-xl border-2 transition-colors disabled:opacity-50",
                 isFav ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               )}
-              aria-label="В избранное"
+              aria-label={isFav ? "Убрать из избранного" : "В избранное"}
             >
               <Heart className={cn("h-5 w-5", isFav && "fill-current")} />
             </button>

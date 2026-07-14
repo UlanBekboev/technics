@@ -11,7 +11,7 @@ import type { Product } from "@/types";
 
 export default function FavoritesPage() {
   const { user } = useAuthStore();
-  const { setIds } = useFavoritesStore();
+  const { ids, setIds } = useFavoritesStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +25,12 @@ export default function FavoritesPage() {
       })
       .catch(() => { setIds([]); setLoading(false); });
   }, [user]);
+
+  // Un-hearting a card on this page updates the global favorites store
+  // immediately — filter by it so the card disappears right away instead
+  // of sitting there looking unremoved (which invited a second click that
+  // just re-added it).
+  const visibleProducts = products.filter((p) => ids.includes(p.id));
 
   if (!user) {
     return (
@@ -43,14 +49,14 @@ export default function FavoritesPage() {
       <div className="mb-6 flex items-center gap-3">
         <Heart className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-extrabold">Избранное</h1>
-        {!loading && <span className="text-sm text-muted-foreground">({products.length} товаров)</span>}
+        {!loading && <span className="text-sm text-muted-foreground">({visibleProducts.length} товаров)</span>}
       </div>
 
       {loading ? (
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => <ProductCardSkeleton key={i} />)}
         </div>
-      ) : products.length === 0 ? (
+      ) : visibleProducts.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-20 text-center">
           <Heart className="h-16 w-16 text-muted-foreground/20" />
           <h2 className="text-lg font-semibold">Нет избранных товаров</h2>
@@ -61,7 +67,7 @@ export default function FavoritesPage() {
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {products.map((p) => <ProductCard key={p.id} product={p} />)}
+          {visibleProducts.map((p) => <ProductCard key={p.id} product={p} />)}
         </div>
       )}
     </div>

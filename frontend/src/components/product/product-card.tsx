@@ -23,6 +23,7 @@ export function ProductCard({ product }: { product: Product }) {
   const cart = useCartStore();
   const [mounted, setMounted] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [favPending, setFavPending] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const isFav = mounted && favs.has(product.id);
@@ -32,8 +33,16 @@ export function ProductCard({ product }: { product: Product }) {
 
   const handleFav = async (e: React.MouseEvent) => {
     e.preventDefault();
+    if (favPending) return; // block double-clicks — a second request while the first is in flight can race and re-add the item
+    setFavPending(true);
     favs.toggle(product.id);
-    try { await apiToggleFavorite(product.id); } catch {}
+    try {
+      await apiToggleFavorite(product.id);
+    } catch (err: any) {
+      favs.toggle(product.id); // revert the optimistic update — the server didn't confirm it
+      toast.error(err?.response?.data?.message ?? "Не удалось обновить избранное");
+    }
+    setFavPending(false);
   };
 
   const handleAddToCart = async (e: React.MouseEvent) => {
@@ -95,9 +104,10 @@ export function ProductCard({ product }: { product: Product }) {
       {/* Favorite */}
       <button
         onClick={handleFav}
+        disabled={favPending}
         aria-label={isFav ? "Убрать из избранного" : "В избранное"}
         className={cn(
-          "absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full border bg-white/90 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-primary",
+          "absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full border bg-white/90 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-primary disabled:opacity-50",
           isFav && "border-primary/40 text-primary",
         )}
         style={{ borderColor: isFav ? undefined : "hsl(var(--border))" }}
